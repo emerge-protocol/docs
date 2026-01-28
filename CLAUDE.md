@@ -8,14 +8,16 @@ Documentation for Emerge API - a privacy-first API for accessing consented user 
 - Build system: Mintlify (cloud-hosted, auto-deploys from GitHub)
 - Config: docs.json (navigation, theme, branding)
 - Theme: maple with Emerge brand colors (primary: #e36c35, light: #ff4f1a, dark: #2e1205)
-- Branding: Mintlify footer branding hidden (`branding.hide: true`)
+- Branding: Mintlify footer branding hidden (`branding.hide: true` in docs.json + CSS selector in style.css)
+- Custom styles: style.css - Logo sized to 32px height, Mintlify "Powered by" footer hidden via CSS
 - OpenAPI spec: openapi/emerge.json (v1.0.0)
 - AI integration: MCP (Model Context Protocol) enabled
 - Local dev: `mint dev` (requires global CLI: `npm i -g mint`)
 - Preview URL: http://localhost:3000
-- Logo: emerge-logo.svg (300x80px, text-based with system-ui fonts, 58px bold, used for both light and dark modes)
+- Logo: emerge-logo.svg (360x96px, text-based with system-ui fonts, 70px bold, used for both light and dark modes)
 - Favicon: favicon.ico (MS Windows icon resource with 16x16 and 32x32 PNG icons)
 - Navbar: Primary CTA button links to Control Room (dashboard.emergedata.ai), support email link (account@emergedata.ai) in secondary navigation and global footer
+- Global anchors: Control Room (arrow-up-right-from-square icon, external link indicator), Support (envelope icon)
 
 ## Content structure
 
@@ -27,7 +29,7 @@ Documentation for Emerge API - a privacy-first API for accessing consented user 
 
 ### Key files
 - `index.mdx` - Homepage with product overview and navigation
-- `quickstart.mdx` - 30-minute integration guide with AI tool setup section (MCP integration for Cursor, Claude Code, VS Code)
+- `quickstart.mdx` - 30-minute integration guide with upfront AI tool setup section (MCP integration for Cursor, Claude Code, VS Code) at the beginning before prerequisites
 - `AGENTS.md` - AI-specific documentation guidelines (code examples, API patterns, terminology)
 - `CLAUDE.md` - This file - project memory for AI agents
 - `changelog.mdx` - Version history (current: v1.0.0)
@@ -110,8 +112,9 @@ description: Concise summary for SEO/navigation
 - `/essentials/` - Template content (code, images, markdown, navigation, etc.)
 - `/snippets/` - Reusable content snippets
 - `/images/` - Documentation images and diagrams
-- `/logo/` - Brand assets (emerge-logo.svg - 300x80px text-based logo)
+- `/logo/` - Brand assets (emerge-logo.svg - 360x96px text-based logo)
 - `favicon.ico` - Site favicon (16x16 and 32x32 icons)
+- `style.css` - Custom styles (32px logo height, hide Mintlify footer)
 
 ## Build and development
 
@@ -192,8 +195,8 @@ mint validate
 - Link API: https://link.emergedata.ai
 - Query API: https://query.emergedata.ai
 - Dashboard: https://dashboard.emergedata.ai
-- MCP Server: https://emerge.mintlify.dev/mcp (AI tool integration)
-- Docs site: https://emerge.mintlify.dev (or custom domain if configured)
+- MCP Server: https://docs.emergedata.ai/mcp (AI tool integration)
+- Docs site: https://docs.emergedata.ai (or custom domain if configured)
 
 ## AI-native features
 
