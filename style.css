@@ -9,3 +9,8 @@ nav img {
   height: 32px !important;
   width: auto !important;
 }
+
+/* Hide Powered by Mintlify footer */
+a[href*="mintlify.com?utm_campaign=poweredBy"] {
+  display: none !important;
+}
