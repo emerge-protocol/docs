@@ -307,45 +307,6 @@ print(search_history['data'])
 
 </CodeGroup>
 
-## Step 5: Connect AI tools (optional)
-
-Get AI-powered help while integrating by connecting these docs to your AI tools.
-
-<Tabs>
-  <Tab title="Cursor">
-    Add to `.cursor/mcp.json`:
-    ```json
-    {
-      "mcpServers": {
-        "Emerge": {
-          "url": "https://emerge.mintlify.dev/mcp"
-        }
-      }
-    }
-    ```
-  </Tab>
-  <Tab title="Claude Code">
-    ```bash
-    claude mcp add emerge https://emerge.mintlify.dev/mcp
-    ```
-  </Tab>
-  <Tab title="VS Code">
-    Add to `.vscode/mcp.json`:
-    ```json
-    {
-      "servers": {
-        "Emerge": {
-          "type": "http",
-          "url": "https://emerge.mintlify.dev/mcp"
-        }
-      }
-    }
-    ```
-  </Tab>
-</Tabs>
-
-Or see [AI Integration](/ai/overview) for more options.
-
 ## Next steps
 
 <CardGroup cols={2}>
