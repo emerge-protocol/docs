@@ -5,12 +5,15 @@ Documentation for Emerge API - a privacy-first API for accessing consented user 
 
 ## Technical stack
 - Format: MDX files with YAML frontmatter
-- Build system: Cloud-hosted docs platform (auto-deploys from GitHub)
+- Build system: Mintlify (cloud-hosted, auto-deploys from GitHub)
 - Config: docs.json (navigation, theme, branding)
+- Theme: maple with Emerge brand colors (primary: #e36c35, light: #ff4f1a, dark: #2e1205)
 - OpenAPI spec: openapi/emerge.json (v1.0.0)
 - AI integration: MCP (Model Context Protocol) enabled
 - Local dev: `mint dev` (requires global CLI: `npm i -g mint`)
 - Preview URL: http://localhost:3000
+- Logo: emerge-logo.svg (used for both light and dark modes)
+- Favicon: favicon.ico (MS Windows icon resource with 16x16 and 32x32 PNG icons)
 
 ## Content structure
 
@@ -26,7 +29,7 @@ Documentation for Emerge API - a privacy-first API for accessing consented user 
 - `AGENTS.md` - AI-specific documentation guidelines (code examples, API patterns, terminology)
 - `CLAUDE.md` - This file - project memory for AI agents
 - `changelog.mdx` - Version history (current: v1.0.0)
-- `docs.json` - Navigation structure, configuration, theme colors
+- `docs.json` - Navigation structure, Mintlify configuration, theme colors (maple theme with Emerge branding)
 - `openapi/emerge.json` - OpenAPI 3.1 spec for API reference
 - `README.md` - Documentation development guide
 
@@ -106,6 +109,7 @@ description: Concise summary for SEO/navigation
 - `/snippets/` - Reusable content snippets
 - `/images/` - Documentation images and diagrams
 - `/logo/` - Brand assets (emerge-logo.svg)
+- `favicon.ico` - Site favicon (16x16 and 32x32 icons)
 
 ## Build and development
 
@@ -192,7 +196,7 @@ mint validate
 ## AI-native features
 
 ### MCP (Model Context Protocol)
-- MCP server auto-generated at `/mcp` endpoint
+- Mintlify auto-generates MCP server at `/mcp` endpoint
 - AI tools can search and query documentation semantically
 - Configuration examples in `/ai/mcp-setup.mdx` for Claude, Cursor, VS Code, Claude Code
 
@@ -201,6 +205,11 @@ mint validate
 - Options: copy, view, chatgpt, claude, perplexity, mcp, cursor, vscode
 - Right-click any code block or text selection for AI-powered actions
 - Examples documented in `/ai/contextual-menu.mdx`
+
+### Interactive API playground
+- OpenAPI playground mode set to "interactive"
+- Allows testing API endpoints directly from documentation
+- Configured via `api.playground.display` in docs.json
 
 ## Working relationship
 - Push back on ideas with citations and reasoning

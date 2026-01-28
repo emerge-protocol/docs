@@ -180,5 +180,8 @@
     "socials": {
       "linkedin": "https://linkedin.com/company/emergedata"
     }
+  },
+  "branding": {
+    "hide": true
   }
 }
