@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Emerge API",
-    "version": "0.0.9",
+    "version": "1.0.0",
     "description": "Privacy-first API for accessing consented user data. Emerge provides two main services: **Link** for collecting user consent and **Query** for retrieving user data.",
     "contact": {
       "name": "Emerge Support",
@@ -47,7 +47,7 @@
       "post": {
         "operationId": "createConfig",
         "summary": "Create flow configuration",
-        "description": "Create or update a client's consent flow configuration. This defines company branding, redirect URIs, and privacy policy links shown during the consent flow.",
+        "description": "Create or update a client's consent flow configuration. This defines company branding, webhook URL, and flow settings shown during the consent flow.",
         "tags": ["Link"],
         "x-mint": {
           "server": "https://link.emergedata.ai"
@@ -60,10 +60,13 @@
                 "$ref": "#/components/schemas/FlowConfig"
               },
               "example": {
+                "config_name": "default",
                 "company_name": "Acme Corp",
                 "logo_url": "https://acme.com/logo.png",
                 "privacy_policy_url": "https://acme.com/privacy",
-                "redirect_uris": ["https://acme.com/callback"]
+                "webhook_url": "https://acme.com/webhooks/emerge",
+                "flow_version": "lm",
+                "is_default": true
               }
             }
           }
@@ -78,7 +81,8 @@
                 },
                 "example": {
                   "success": true,
-                  "client_id": "acme_corp"
+                  "client_id": "acme_corp",
+                  "config_name": "default"
                 }
               }
             }
@@ -110,7 +114,7 @@
       "get": {
         "operationId": "getConsentStatus",
         "summary": "Check consent status",
-        "description": "Check the consent status for a specific user. Returns whether consent has been granted and the timestamp of consent.",
+        "description": "Check the consent status for a specific user. Returns an array of consents with provider, scopes, validity, and timestamps.",
         "tags": ["Link"],
         "x-mint": {
           "server": "https://link.emergedata.ai"
@@ -137,9 +141,15 @@
                 },
                 "example": {
                   "uid": "user_12345",
-                  "status": "success",
-                  "consented_at": "2024-01-15T10:30:00Z",
-                  "provider": "google-gmail"
+                  "consents": [
+                    {
+                      "provider": "google-gmail",
+                      "scopes": ["gmail.readonly", "gmail.metadata"],
+                      "valid_until": "2025-01-15T10:30:00Z",
+                      "status": "active",
+                      "issued_at": "2024-01-15T10:30:00Z"
+                    }
+                  ]
                 }
               }
             }
@@ -198,10 +208,10 @@
                 },
                 "example": {
                   "uid": "user_12345",
-                  "status": "completed",
-                  "started_at": "2024-01-15T10:30:00Z",
-                  "completed_at": "2024-01-15T10:35:00Z",
-                  "data_types": ["search", "browsing"]
+                  "data_ready": true,
+                  "data_landed_at": "2024-01-15T10:35:00Z",
+                  "export_status": "completed",
+                  "export_completed_at": "2024-01-15T10:35:00Z"
                 }
               }
             }
@@ -233,27 +243,33 @@
       "get": {
         "operationId": "getSearchAsync",
         "summary": "Query search history (async)",
-        "description": "Start an asynchronous query for user search history. Returns a task ID for polling the result.",
+        "description": "Start an asynchronous query for search history of up to 25 users. Returns a task ID for polling. When complete, results are available as a Parquet file via presigned S3 URL.",
         "tags": ["Query Async"],
         "x-mint": {
           "server": "https://query.emergedata.ai"
         },
         "parameters": [
           {
-            "name": "uid",
+            "name": "users",
             "in": "query",
             "required": true,
-            "description": "User identifier",
+            "description": "Array of user identifiers (max 25)",
             "schema": {
-              "type": "string"
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 25
             },
-            "example": "user_12345"
+            "style": "form",
+            "explode": true,
+            "example": ["user_12345", "user_67890"]
           },
           {
-            "name": "ingested_after",
+            "name": "begin",
             "in": "query",
             "required": false,
-            "description": "Filter results ingested after this timestamp (ISO 8601)",
+            "description": "Filter results with timestamp after this date (ISO 8601)",
             "schema": {
               "type": "string",
               "format": "date-time"
@@ -261,33 +277,13 @@
             "example": "2024-01-01T00:00:00Z"
           },
           {
-            "name": "ingested_before",
+            "name": "end",
             "in": "query",
             "required": false,
-            "description": "Filter results ingested before this timestamp (ISO 8601)",
+            "description": "Filter results with timestamp before this date (ISO 8601)",
             "schema": {
               "type": "string",
               "format": "date-time"
-            }
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "required": false,
-            "description": "Pagination cursor from previous response",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "description": "Maximum number of results to return",
-            "schema": {
-              "type": "integer",
-              "default": 100,
-              "maximum": 1000
             }
           }
         ],
@@ -323,59 +319,45 @@
       "get": {
         "operationId": "getBrowsingAsync",
         "summary": "Query browsing history (async)",
-        "description": "Start an asynchronous query for user browsing history. Returns a task ID for polling the result.",
+        "description": "Start an asynchronous query for browsing history of up to 25 users. Returns a task ID for polling. When complete, results are available as a Parquet file via presigned S3 URL.",
         "tags": ["Query Async"],
         "x-mint": {
           "server": "https://query.emergedata.ai"
         },
         "parameters": [
           {
-            "name": "uid",
+            "name": "users",
             "in": "query",
             "required": true,
-            "description": "User identifier",
+            "description": "Array of user identifiers (max 25)",
             "schema": {
-              "type": "string"
-            }
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 25
+            },
+            "style": "form",
+            "explode": true
           },
           {
-            "name": "ingested_after",
+            "name": "begin",
             "in": "query",
             "required": false,
-            "description": "Filter results ingested after this timestamp (ISO 8601)",
+            "description": "Filter results with timestamp after this date (ISO 8601)",
             "schema": {
               "type": "string",
               "format": "date-time"
             }
           },
           {
-            "name": "ingested_before",
+            "name": "end",
             "in": "query",
             "required": false,
-            "description": "Filter results ingested before this timestamp (ISO 8601)",
+            "description": "Filter results with timestamp before this date (ISO 8601)",
             "schema": {
               "type": "string",
               "format": "date-time"
-            }
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "required": false,
-            "description": "Pagination cursor from previous response",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "description": "Maximum number of results to return",
-            "schema": {
-              "type": "integer",
-              "default": 100,
-              "maximum": 1000
             }
           }
         ],
@@ -407,59 +389,45 @@
       "get": {
         "operationId": "getYoutubeAsync",
         "summary": "Query YouTube history (async)",
-        "description": "Start an asynchronous query for user YouTube watch history. Returns a task ID for polling the result.",
+        "description": "Start an asynchronous query for YouTube watch history of up to 25 users. Returns a task ID for polling. When complete, results are available as a Parquet file via presigned S3 URL.",
         "tags": ["Query Async"],
         "x-mint": {
           "server": "https://query.emergedata.ai"
         },
         "parameters": [
           {
-            "name": "uid",
+            "name": "users",
             "in": "query",
             "required": true,
-            "description": "User identifier",
+            "description": "Array of user identifiers (max 25)",
             "schema": {
-              "type": "string"
-            }
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 25
+            },
+            "style": "form",
+            "explode": true
           },
           {
-            "name": "ingested_after",
+            "name": "begin",
             "in": "query",
             "required": false,
-            "description": "Filter results ingested after this timestamp (ISO 8601)",
+            "description": "Filter results with timestamp after this date (ISO 8601)",
             "schema": {
               "type": "string",
               "format": "date-time"
             }
           },
           {
-            "name": "ingested_before",
+            "name": "end",
             "in": "query",
             "required": false,
-            "description": "Filter results ingested before this timestamp (ISO 8601)",
+            "description": "Filter results with timestamp before this date (ISO 8601)",
             "schema": {
               "type": "string",
               "format": "date-time"
-            }
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "required": false,
-            "description": "Pagination cursor from previous response",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "description": "Maximum number of results to return",
-            "schema": {
-              "type": "integer",
-              "default": 100,
-              "maximum": 1000
             }
           }
         ],
@@ -491,59 +459,45 @@
       "get": {
         "operationId": "getAdsAsync",
         "summary": "Query ad interactions (async)",
-        "description": "Start an asynchronous query for user ad interaction history. Returns a task ID for polling the result.",
+        "description": "Start an asynchronous query for ad interaction history of up to 25 users. Returns a task ID for polling. When complete, results are available as a Parquet file via presigned S3 URL.",
         "tags": ["Query Async"],
         "x-mint": {
           "server": "https://query.emergedata.ai"
         },
         "parameters": [
           {
-            "name": "uid",
+            "name": "users",
             "in": "query",
             "required": true,
-            "description": "User identifier",
+            "description": "Array of user identifiers (max 25)",
             "schema": {
-              "type": "string"
-            }
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 25
+            },
+            "style": "form",
+            "explode": true
           },
           {
-            "name": "ingested_after",
+            "name": "begin",
             "in": "query",
             "required": false,
-            "description": "Filter results ingested after this timestamp (ISO 8601)",
+            "description": "Filter results with timestamp after this date (ISO 8601)",
             "schema": {
               "type": "string",
               "format": "date-time"
             }
           },
           {
-            "name": "ingested_before",
+            "name": "end",
             "in": "query",
             "required": false,
-            "description": "Filter results ingested before this timestamp (ISO 8601)",
+            "description": "Filter results with timestamp before this date (ISO 8601)",
             "schema": {
               "type": "string",
               "format": "date-time"
-            }
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "required": false,
-            "description": "Pagination cursor from previous response",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "description": "Maximum number of results to return",
-            "schema": {
-              "type": "integer",
-              "default": 100,
-              "maximum": 1000
             }
           }
         ],
@@ -575,7 +529,7 @@
       "get": {
         "operationId": "getJob",
         "summary": "Get job status and results",
-        "description": "Poll for the status of an async query job. When status is `completed`, the response includes the query results.",
+        "description": "Poll for the status of an async query job. When status is `completed`, the response includes a presigned S3 URL to download results as a Parquet file.",
         "tags": ["Jobs"],
         "x-mint": {
           "server": "https://query.emergedata.ai"
@@ -613,13 +567,9 @@
                     "value": {
                       "task_id": "task_abc123",
                       "status": "completed",
-                      "data": [
-                        {
-                          "query": "best restaurants nearby",
-                          "timestamp": "2024-01-15T10:30:00Z"
-                        }
-                      ],
-                      "cursor": "eyJsYXN0X2lkIjogMTIzNH0="
+                      "download_url": "https://emerge-exports.s3.amazonaws.com/results/task_abc123.parquet?...",
+                      "expires_at": "2024-01-15T11:30:00Z",
+                      "record_count": 1250
                     }
                   }
                 }
@@ -725,7 +675,7 @@
       "get": {
         "operationId": "getSearchSync",
         "summary": "Query search history (sync)",
-        "description": "Synchronously query user search history. Returns results directly in the response. Best for smaller datasets or real-time needs.",
+        "description": "Synchronously query user search history. Returns results directly in the response. 30-second timeout. Best for smaller datasets or real-time needs.",
         "tags": ["Query Sync"],
         "x-mint": {
           "server": "https://query.emergedata.ai"
@@ -742,20 +692,20 @@
             "example": "user_12345"
           },
           {
-            "name": "ingested_after",
+            "name": "ingested_begin",
             "in": "query",
             "required": false,
-            "description": "Filter results ingested after this timestamp (ISO 8601)",
+            "description": "Filter results ingested at or after this timestamp (ISO 8601). Use for delta queries.",
             "schema": {
               "type": "string",
               "format": "date-time"
             }
           },
           {
-            "name": "ingested_before",
+            "name": "ingested_end",
             "in": "query",
             "required": false,
-            "description": "Filter results ingested before this timestamp (ISO 8601)",
+            "description": "Filter results ingested before this timestamp (ISO 8601). Use for delta queries.",
             "schema": {
               "type": "string",
               "format": "date-time"
@@ -765,7 +715,7 @@
             "name": "cursor",
             "in": "query",
             "required": false,
-            "description": "Pagination cursor from previous response",
+            "description": "Pagination cursor from previous response (next_cursor)",
             "schema": {
               "type": "string"
             }
@@ -788,23 +738,29 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SearchResult"
+                  "$ref": "#/components/schemas/SyncResult"
                 },
                 "example": {
-                  "data": [
+                  "entries": [
                     {
+                      "event_id": "evt_abc123",
                       "query": "best restaurants nearby",
                       "timestamp": "2024-01-15T10:30:00Z",
-                      "source": "google"
+                      "ingested_at": "2024-01-15T10:31:00Z",
+                      "brands": ["Google"]
                     },
                     {
+                      "event_id": "evt_def456",
                       "query": "weather forecast",
                       "timestamp": "2024-01-15T09:15:00Z",
-                      "source": "google"
+                      "ingested_at": "2024-01-15T09:16:00Z",
+                      "brands": ["Google"]
                     }
                   ],
-                  "cursor": "eyJsYXN0X2lkIjogMTIzNH0=",
-                  "has_more": true
+                  "count": 2,
+                  "has_more": true,
+                  "next_cursor": "eyJsYXN0X2lkIjogMTIzNH0=",
+                  "applied_ingested_end": "2024-01-15T10:31:00Z"
                 }
               }
             }
@@ -826,7 +782,7 @@
       "get": {
         "operationId": "getBrowsingSync",
         "summary": "Query browsing history (sync)",
-        "description": "Synchronously query user browsing history. Returns results directly in the response.",
+        "description": "Synchronously query user browsing history. Returns results directly in the response. 30-second timeout.",
         "tags": ["Query Sync"],
         "x-mint": {
           "server": "https://query.emergedata.ai"
@@ -842,17 +798,17 @@
             }
           },
           {
-            "name": "ingested_after",
+            "name": "ingested_begin",
             "in": "query",
             "required": false,
-            "description": "Filter results ingested after this timestamp (ISO 8601)",
+            "description": "Filter results ingested at or after this timestamp (ISO 8601)",
             "schema": {
               "type": "string",
               "format": "date-time"
             }
           },
           {
-            "name": "ingested_before",
+            "name": "ingested_end",
             "in": "query",
             "required": false,
             "description": "Filter results ingested before this timestamp (ISO 8601)",
@@ -865,7 +821,7 @@
             "name": "cursor",
             "in": "query",
             "required": false,
-            "description": "Pagination cursor from previous response",
+            "description": "Pagination cursor from previous response (next_cursor)",
             "schema": {
               "type": "string"
             }
@@ -888,18 +844,23 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BrowsingResult"
+                  "$ref": "#/components/schemas/SyncResult"
                 },
                 "example": {
-                  "data": [
+                  "entries": [
                     {
+                      "event_id": "evt_abc123",
                       "url": "https://example.com/article",
                       "title": "Example Article",
-                      "timestamp": "2024-01-15T10:30:00Z"
+                      "timestamp": "2024-01-15T10:30:00Z",
+                      "ingested_at": "2024-01-15T10:31:00Z",
+                      "brands": ["Chrome"]
                     }
                   ],
-                  "cursor": "eyJsYXN0X2lkIjogMTIzNH0=",
-                  "has_more": true
+                  "count": 1,
+                  "has_more": true,
+                  "next_cursor": "eyJsYXN0X2lkIjogMTIzNH0=",
+                  "applied_ingested_end": "2024-01-15T10:31:00Z"
                 }
               }
             }
@@ -921,7 +882,7 @@
       "get": {
         "operationId": "getYoutubeSync",
         "summary": "Query YouTube history (sync)",
-        "description": "Synchronously query user YouTube watch history. Returns results directly in the response.",
+        "description": "Synchronously query user YouTube watch history. Returns results directly in the response. 30-second timeout.",
         "tags": ["Query Sync"],
         "x-mint": {
           "server": "https://query.emergedata.ai"
@@ -937,17 +898,17 @@
             }
           },
           {
-            "name": "ingested_after",
+            "name": "ingested_begin",
             "in": "query",
             "required": false,
-            "description": "Filter results ingested after this timestamp (ISO 8601)",
+            "description": "Filter results ingested at or after this timestamp (ISO 8601)",
             "schema": {
               "type": "string",
               "format": "date-time"
             }
           },
           {
-            "name": "ingested_before",
+            "name": "ingested_end",
             "in": "query",
             "required": false,
             "description": "Filter results ingested before this timestamp (ISO 8601)",
@@ -960,7 +921,7 @@
             "name": "cursor",
             "in": "query",
             "required": false,
-            "description": "Pagination cursor from previous response",
+            "description": "Pagination cursor from previous response (next_cursor)",
             "schema": {
               "type": "string"
             }
@@ -983,19 +944,24 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/YoutubeResult"
+                  "$ref": "#/components/schemas/SyncResult"
                 },
                 "example": {
-                  "data": [
+                  "entries": [
                     {
+                      "event_id": "evt_abc123",
                       "video_id": "dQw4w9WgXcQ",
                       "title": "Example Video",
                       "channel": "Example Channel",
-                      "timestamp": "2024-01-15T10:30:00Z"
+                      "timestamp": "2024-01-15T10:30:00Z",
+                      "ingested_at": "2024-01-15T10:31:00Z",
+                      "brands": ["YouTube"]
                     }
                   ],
-                  "cursor": "eyJsYXN0X2lkIjogMTIzNH0=",
-                  "has_more": false
+                  "count": 1,
+                  "has_more": false,
+                  "next_cursor": null,
+                  "applied_ingested_end": "2024-01-15T10:31:00Z"
                 }
               }
             }
@@ -1017,7 +983,7 @@
       "get": {
         "operationId": "getAdsSync",
         "summary": "Query ad interactions (sync)",
-        "description": "Synchronously query user ad interaction history. Returns results directly in the response.",
+        "description": "Synchronously query user ad interaction history. Returns results directly in the response. 30-second timeout.",
         "tags": ["Query Sync"],
         "x-mint": {
           "server": "https://query.emergedata.ai"
@@ -1033,17 +999,17 @@
             }
           },
           {
-            "name": "ingested_after",
+            "name": "ingested_begin",
             "in": "query",
             "required": false,
-            "description": "Filter results ingested after this timestamp (ISO 8601)",
+            "description": "Filter results ingested at or after this timestamp (ISO 8601)",
             "schema": {
               "type": "string",
               "format": "date-time"
             }
           },
           {
-            "name": "ingested_before",
+            "name": "ingested_end",
             "in": "query",
             "required": false,
             "description": "Filter results ingested before this timestamp (ISO 8601)",
@@ -1056,7 +1022,7 @@
             "name": "cursor",
             "in": "query",
             "required": false,
-            "description": "Pagination cursor from previous response",
+            "description": "Pagination cursor from previous response (next_cursor)",
             "schema": {
               "type": "string"
             }
@@ -1079,18 +1045,23 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdsResult"
+                  "$ref": "#/components/schemas/SyncResult"
                 },
                 "example": {
-                  "data": [
+                  "entries": [
                     {
+                      "event_id": "evt_abc123",
                       "advertiser": "Example Brand",
                       "ad_type": "display",
-                      "timestamp": "2024-01-15T10:30:00Z"
+                      "timestamp": "2024-01-15T10:30:00Z",
+                      "ingested_at": "2024-01-15T10:31:00Z",
+                      "brands": ["Google Ads"]
                     }
                   ],
-                  "cursor": "eyJsYXN0X2lkIjogMTIzNH0=",
-                  "has_more": false
+                  "count": 1,
+                  "has_more": false,
+                  "next_cursor": null,
+                  "applied_ingested_end": "2024-01-15T10:31:00Z"
                 }
               }
             }
@@ -1120,8 +1091,13 @@
     "schemas": {
       "FlowConfig": {
         "type": "object",
-        "required": ["company_name", "logo_url", "privacy_policy_url", "redirect_uris"],
+        "required": ["config_name", "company_name", "logo_url", "privacy_policy_url"],
         "properties": {
+          "config_name": {
+            "type": "string",
+            "description": "Configuration name (use 'default' for primary config)",
+            "example": "default"
+          },
           "company_name": {
             "type": "string",
             "description": "Company name displayed in the consent flow",
@@ -1139,14 +1115,22 @@
             "description": "URL to company privacy policy",
             "example": "https://acme.com/privacy"
           },
-          "redirect_uris": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uri"
-            },
-            "description": "Allowed redirect URIs for callbacks",
-            "example": ["https://acme.com/callback"]
+          "webhook_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to receive webhook events",
+            "example": "https://acme.com/webhooks/emerge"
+          },
+          "flow_version": {
+            "type": "string",
+            "description": "Consent flow version (default: 'lm' for Gmail flow)",
+            "default": "lm",
+            "example": "lm"
+          },
+          "is_default": {
+            "type": "boolean",
+            "description": "Whether this is the default configuration",
+            "default": false
           }
         }
       },
@@ -1158,6 +1142,9 @@
           },
           "client_id": {
             "type": "string"
+          },
+          "config_name": {
+            "type": "string"
           }
         }
       },
@@ -1168,19 +1155,45 @@
             "type": "string",
             "description": "User identifier"
           },
-          "status": {
-            "type": "string",
-            "enum": ["success", "reauthorized", "pending", "failed"],
-            "description": "Consent status"
-          },
-          "consented_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Timestamp when consent was granted"
-          },
+          "consents": {
+            "type": "array",
+            "description": "List of active consents for this user",
+            "items": {
+              "$ref": "#/components/schemas/Consent"
+            }
+          }
+        }
+      },
+      "Consent": {
+        "type": "object",
+        "properties": {
           "provider": {
             "type": "string",
-            "description": "Data provider (e.g., google-gmail)"
+            "description": "Data provider (e.g., google-gmail)",
+            "example": "google-gmail"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Granted OAuth scopes",
+            "example": ["gmail.readonly", "gmail.metadata"]
+          },
+          "valid_until": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the consent expires"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "expired", "revoked"],
+            "description": "Current consent status"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When consent was originally granted"
           }
         }
       },
@@ -1191,25 +1204,24 @@
             "type": "string",
             "description": "User identifier"
           },
-          "status": {
+          "data_ready": {
+            "type": "boolean",
+            "description": "Whether data is ready for querying"
+          },
+          "data_landed_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When data became available"
+          },
+          "export_status": {
             "type": "string",
             "enum": ["pending", "running", "completed", "failed", "insufficient_data"],
             "description": "Export job status"
           },
-          "started_at": {
+          "export_completed_at": {
             "type": "string",
-            "format": "date-time"
-          },
-          "completed_at": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "data_types": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Types of data being exported"
+            "format": "date-time",
+            "description": "When export completed"
           }
         }
       },
@@ -1237,16 +1249,19 @@
             "type": "string",
             "enum": ["pending", "running", "completed", "failed"]
           },
-          "data": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            },
-            "description": "Query results (present when status is completed)"
-          },
-          "cursor": {
+          "download_url": {
             "type": "string",
-            "description": "Pagination cursor for next page"
+            "format": "uri",
+            "description": "Presigned S3 URL to download Parquet results (present when completed)"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the download URL expires"
+          },
+          "record_count": {
+            "type": "integer",
+            "description": "Number of records in the result file"
           },
           "error": {
             "type": "string",
@@ -1285,140 +1300,88 @@
           }
         }
       },
-      "SearchResult": {
+      "SyncResult": {
         "type": "object",
         "properties": {
-          "data": {
+          "entries": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SearchEntry"
-            }
+              "$ref": "#/components/schemas/SyncEntry"
+            },
+            "description": "Array of data entries"
           },
-          "cursor": {
-            "type": "string",
-            "description": "Pagination cursor for next page"
+          "count": {
+            "type": "integer",
+            "description": "Number of entries in this response"
           },
           "has_more": {
             "type": "boolean",
             "description": "Whether more results are available"
+          },
+          "next_cursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Cursor for fetching next page (null if no more results)"
+          },
+          "applied_ingested_end": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The actual ingested_end timestamp applied. Use as ingested_begin for next delta query."
           }
         }
       },
-      "SearchEntry": {
+      "SyncEntry": {
         "type": "object",
         "properties": {
-          "query": {
+          "event_id": {
             "type": "string",
-            "description": "Search query text"
+            "description": "Unique identifier for this event"
           },
           "timestamp": {
             "type": "string",
             "format": "date-time",
-            "description": "When the search was performed"
+            "description": "When the event occurred"
           },
-          "source": {
+          "ingested_at": {
             "type": "string",
-            "description": "Search engine source"
-          }
-        }
-      },
-      "BrowsingResult": {
-        "type": "object",
-        "properties": {
-          "data": {
+            "format": "date-time",
+            "description": "When the event was ingested by Emerge"
+          },
+          "brands": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/BrowsingEntry"
-            }
+              "type": "string"
+            },
+            "description": "Associated brand(s) for this entry"
           },
-          "cursor": {
-            "type": "string"
+          "query": {
+            "type": "string",
+            "description": "Search query text (search entries only)"
           },
-          "has_more": {
-            "type": "boolean"
-          }
-        }
-      },
-      "BrowsingEntry": {
-        "type": "object",
-        "properties": {
           "url": {
             "type": "string",
-            "format": "uri"
+            "format": "uri",
+            "description": "Page URL (browsing entries only)"
           },
           "title": {
-            "type": "string"
-          },
-          "timestamp": {
             "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "YoutubeResult": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/YoutubeEntry"
-            }
+            "description": "Page or video title"
           },
-          "cursor": {
-            "type": "string"
-          },
-          "has_more": {
-            "type": "boolean"
-          }
-        }
-      },
-      "YoutubeEntry": {
-        "type": "object",
-        "properties": {
           "video_id": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
+            "type": "string",
+            "description": "YouTube video ID (YouTube entries only)"
           },
           "channel": {
-            "type": "string"
-          },
-          "timestamp": {
             "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "AdsResult": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AdsEntry"
-            }
+            "description": "YouTube channel name (YouTube entries only)"
           },
-          "cursor": {
-            "type": "string"
-          },
-          "has_more": {
-            "type": "boolean"
-          }
-        }
-      },
-      "AdsEntry": {
-        "type": "object",
-        "properties": {
           "advertiser": {
-            "type": "string"
+            "type": "string",
+            "description": "Advertiser name (ads entries only)"
           },
           "ad_type": {
-            "type": "string"
-          },
-          "timestamp": {
             "type": "string",
-            "format": "date-time"
+            "description": "Type of ad interaction (ads entries only)"
           }
         }
       },

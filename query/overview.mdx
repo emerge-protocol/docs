@@ -7,18 +7,18 @@ The Query API retrieves user data after they've granted consent through Emerge L
 
 ## Available data types
 
-| Data Type | Endpoint | Description |
-|-----------|----------|-------------|
-| Search History | `/search`, `/sync/get_search` | Google search queries |
-| Browsing History | `/browsing`, `/sync/get_browsing` | Chrome browser history |
-| YouTube History | `/youtube`, `/sync/get_youtube` | Watched videos |
-| Ad Interactions | `/ads`, `/sync/get_ads` | Ad clicks and views |
+| Data Type | Sync Endpoint | Async Endpoint | Description |
+|-----------|---------------|----------------|-------------|
+| Search History | `/sync/get_search` | `/search` | Google search queries |
+| Browsing History | `/sync/get_browsing` | `/browsing` | Chrome browser history |
+| YouTube History | `/sync/get_youtube` | `/youtube` | Watched videos |
+| Ad Interactions | `/sync/get_ads` | `/ads` | Ad clicks and views |
 
 ## Sync vs Async
 
 <Tabs>
   <Tab title="Sync (Immediate)">
-    **Best for:** Real-time needs, smaller datasets, simple integrations
+    **Best for:** Real-time needs, single users, simple integrations
 
     ```typescript
     const response = await fetch(
@@ -27,40 +27,46 @@ The Query API retrieves user data after they've granted consent through Emerge L
     );
 
     const data = await response.json();
-    // Data returned immediately
+    // Data returned immediately in JSON format
     ```
 
     **Characteristics:**
-    - Response includes data directly
+    - Single `uid` parameter
+    - Response includes data directly as JSON
     - 30-second timeout
-    - Simpler implementation
+    - Supports pagination with `cursor`
+    - Supports delta queries with `ingested_begin`/`ingested_end`
   </Tab>
   <Tab title="Async (Job-based)">
-    **Best for:** Large datasets, background processing, batch operations
+    **Best for:** Large datasets, multiple users, batch processing
 
     ```typescript
-    // 1. Start the query
+    // 1. Start the query (up to 25 users)
     const startResponse = await fetch(
-      `https://query.emergedata.ai/v1/search?uid=${uid}`,
+      `https://query.emergedata.ai/v1/search?users=${encodeURIComponent(JSON.stringify(['user_1', 'user_2']))}&begin=2024-01-01&end=2024-01-31`,
       { headers: { 'Authorization': `Bearer ${token}` } }
     );
-    const { task_id } = await startResponse.json();
+    const { job_id } = await startResponse.json();
 
     // 2. Poll for results
     const resultResponse = await fetch(
-      `https://query.emergedata.ai/v1/job/${task_id}`,
+      `https://query.emergedata.ai/v1/job/${job_id}`,
       { headers: { 'Authorization': `Bearer ${token}` } }
     );
     const result = await resultResponse.json();
 
     if (result.status === 'completed') {
-      // Process result.data
+      // Download Parquet file from result.download_url
+      console.log(result.download_url);
     }
     ```
 
     **Characteristics:**
-    - Returns task ID immediately
-    - Poll `/v1/job/{task_id}` for results
+    - `users` array parameter (up to 25 users per request)
+    - `begin`/`end` date range parameters
+    - Returns `job_id` immediately
+    - Poll `/v1/job/{job_id}` for status
+    - Completed jobs provide S3 presigned URL to Parquet file
     - No timeout concerns
   </Tab>
 </Tabs>
@@ -69,11 +75,12 @@ The Query API retrieves user data after they've granted consent through Emerge L
 
 | Use Case | Recommendation |
 |----------|----------------|
-| User-facing dashboard | Sync - immediate response |
-| Background data processing | Async - handles any size |
+| User-facing dashboard | Sync - immediate JSON response |
+| Background data processing | Async - batch multiple users |
 | Real-time personalization | Sync - low latency |
-| Batch analytics | Async - no timeout limits |
+| Batch analytics | Async - Parquet format for big data tools |
 | Mobile app | Sync - simpler error handling |
+| Multi-user reports | Async - query up to 25 users at once |
 
 ## Authentication
 
@@ -84,29 +91,62 @@ curl 'https://query.emergedata.ai/v1/sync/get_search?uid=user_123' \
   -H 'Authorization: Bearer your_api_token'
 ```
 
-## Response format
+## Sync response format
 
-All endpoints return data in a consistent format:
+Sync endpoints return JSON directly:
 
 ```json
 {
   "data": [
     {
+      "event_id": "evt_abc123",
       "query": "best restaurants nearby",
       "timestamp": "2024-01-15T10:30:00Z",
-      "source": "google"
+      "source": "google",
+      "ingested_at": "2024-01-15T11:00:00Z"
     }
   ],
-  "cursor": "eyJsYXN0X2lkIjogMTIzNH0=",
-  "has_more": true
+  "count": 1,
+  "has_more": true,
+  "next_cursor": "eyJsYXN0X2lkIjogMTIzNH0=",
+  "applied_ingested_end": "2024-01-15T12:00:00Z"
 }
 ```
 
 | Field | Description |
 |-------|-------------|
 | `data` | Array of records |
-| `cursor` | Pagination token for next page |
+| `event_id` | Unique identifier for deduplication |
+| `ingested_at` | When record was added to Emerge |
+| `count` | Number of records in this response |
 | `has_more` | Whether more records exist |
+| `next_cursor` | Pagination token for next page |
+| `applied_ingested_end` | Actual end time used (for delta sync) |
+
+## Async response format
+
+Async endpoints return a job reference:
+
+```json
+{
+  "job_id": "job_abc123",
+  "status": "pending"
+}
+```
+
+When completed, the job result includes a download URL:
+
+```json
+{
+  "job_id": "job_abc123",
+  "status": "completed",
+  "download_url": "https://s3.amazonaws.com/...",
+  "expires_at": "2024-01-15T12:00:00Z",
+  "record_count": 15234
+}
+```
+
+The download URL points to a Parquet file containing all results.
 
 ## Error responses
 
@@ -121,7 +161,7 @@ All endpoints return data in a consistent format:
 
 <CardGroup cols={2}>
   <Card title="Pagination" icon="arrow-right" href="/query/pagination">
-    Handle large datasets with cursors
+    Handle large datasets with cursors and delta queries
   </Card>
   <Card title="API Reference" icon="code" href="/query/overview">
     See all endpoints in the API tab

@@ -24,16 +24,17 @@ import hmac
 import hashlib
 import time
 import secrets
+from datetime import datetime, timezone
 from dataclasses import dataclass
 from typing import Optional
-from urllib.parse import urlencode, quote
+from urllib.parse import urlencode
 import requests
 
 
 @dataclass
 class EmergeConfig:
     client_id: str
-    client_secret: str
+    signing_secret: str
     api_token: str
     redirect_uri: str
 
@@ -64,7 +65,8 @@ class EmergeLinkClient:
         locale: Optional[str] = None
     ) -> LinkResult:
         """Create a signed link URL for the consent flow."""
-        timestamp = str(int(time.time()))
+        # Use ISO 8601 timestamp
+        timestamp = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
         state = secrets.token_hex(16)
 
         # Store state for verification
@@ -85,15 +87,12 @@ class EmergeLinkClient:
         if locale:
             params['locale'] = locale
 
-        # Sort and create signature
+        # Sort and create signature (raw values, NOT URL-encoded)
         sorted_items = sorted(params.items())
-        signature_base = '&'.join(
-            f'{quote(str(k), safe="")}={quote(str(v), safe="")}'
-            for k, v in sorted_items
-        )
+        signature_base = '&'.join(f'{k}={v}' for k, v in sorted_items)
 
         signature = hmac.new(
-            self.config.client_secret.encode(),
+            self.config.signing_secret.encode(),
             signature_base.encode(),
             hashlib.sha256
         ).hexdigest()
@@ -101,7 +100,7 @@ class EmergeLinkClient:
         params['signature'] = signature
 
         return LinkResult(
-            url=f'https://link.emergedata.ai/link?{urlencode(params)}',
+            url=f'https://link.emergedata.ai/link/start?{urlencode(params)}',
             state=state
         )
 
@@ -129,7 +128,12 @@ class EmergeLinkClient:
         )
 
     def get_consent_status(self, uid: str) -> dict:
-        """Get consent status for a user."""
+        """Get consent status for a user.
+
+        Returns:
+            dict with 'consents' array containing provider, scopes,
+            valid_until, status, issued_at for each consent
+        """
         response = requests.get(
             f'https://link.emergedata.ai/consent/status/{uid}',
             headers={'Authorization': f'Bearer {self.config.api_token}'}
@@ -138,7 +142,12 @@ class EmergeLinkClient:
         return response.json()
 
     def get_export_status(self, uid: str) -> dict:
-        """Get export status for a user."""
+        """Get export status for a user.
+
+        Returns:
+            dict with data_ready, data_landed_at, export_status,
+            export_completed_at fields
+        """
         response = requests.get(
             f'https://link.emergedata.ai/export/status/{uid}',
             headers={'Authorization': f'Bearer {self.config.api_token}'}
@@ -151,15 +160,15 @@ class EmergeLinkClient:
 
 ```python
 from dataclasses import dataclass
-from typing import Optional, TypeVar, Generic, Callable, Any
+from typing import Optional, Callable, Any
 import requests
 
 
 @dataclass
 class QueryParams:
     uid: str
-    ingested_after: Optional[str] = None
-    ingested_before: Optional[str] = None
+    ingested_begin: Optional[str] = None
+    ingested_end: Optional[str] = None
     cursor: Optional[str] = None
     limit: Optional[int] = None
 
@@ -167,8 +176,10 @@ class QueryParams:
 @dataclass
 class QueryResult:
     data: list[dict]
-    cursor: Optional[str]
+    count: int
     has_more: bool
+    next_cursor: Optional[str]
+    applied_ingested_end: Optional[str]
 
 
 class EmergeQueryClient:
@@ -179,10 +190,10 @@ class EmergeQueryClient:
     def _request(self, endpoint: str, params: QueryParams) -> QueryResult:
         url_params = {'uid': params.uid}
 
-        if params.ingested_after:
-            url_params['ingested_after'] = params.ingested_after
-        if params.ingested_before:
-            url_params['ingested_before'] = params.ingested_before
+        if params.ingested_begin:
+            url_params['ingested_begin'] = params.ingested_begin
+        if params.ingested_end:
+            url_params['ingested_end'] = params.ingested_end
         if params.cursor:
             url_params['cursor'] = params.cursor
         if params.limit:
@@ -198,8 +209,10 @@ class EmergeQueryClient:
         result = response.json()
         return QueryResult(
             data=result['data'],
-            cursor=result.get('cursor'),
-            has_more=result.get('has_more', False)
+            count=result.get('count', len(result['data'])),
+            has_more=result.get('has_more', False),
+            next_cursor=result.get('next_cursor'),
+            applied_ingested_end=result.get('applied_ingested_end')
         )
 
     def get_search(self, params: QueryParams) -> QueryResult:
@@ -222,28 +235,34 @@ class EmergeQueryClient:
         self,
         fetcher: Callable[[QueryParams], QueryResult],
         uid: str,
-        ingested_after: Optional[str] = None,
-        ingested_before: Optional[str] = None
-    ) -> list[dict]:
-        """Fetch all records with automatic pagination."""
+        ingested_begin: Optional[str] = None,
+        ingested_end: Optional[str] = None
+    ) -> tuple[list[dict], Optional[str]]:
+        """Fetch all records with automatic pagination.
+
+        Returns:
+            Tuple of (all_data, applied_ingested_end)
+        """
         all_data = []
         cursor = None
+        applied_end = None
 
         while True:
             params = QueryParams(
                 uid=uid,
-                ingested_after=ingested_after,
-                ingested_before=ingested_before,
+                ingested_begin=ingested_begin,
+                ingested_end=ingested_end,
                 cursor=cursor
             )
             result = fetcher(params)
             all_data.extend(result.data)
+            applied_end = result.applied_ingested_end
 
             if not result.has_more:
                 break
-            cursor = result.cursor
+            cursor = result.next_cursor
 
-        return all_data
+        return all_data, applied_end
 ```
 
 ## Async Query Client
@@ -262,10 +281,10 @@ class AsyncEmergeQueryClient:
     async def _request(self, endpoint: str, params: QueryParams) -> QueryResult:
         url_params = {'uid': params.uid}
 
-        if params.ingested_after:
-            url_params['ingested_after'] = params.ingested_after
-        if params.ingested_before:
-            url_params['ingested_before'] = params.ingested_before
+        if params.ingested_begin:
+            url_params['ingested_begin'] = params.ingested_begin
+        if params.ingested_end:
+            url_params['ingested_end'] = params.ingested_end
         if params.cursor:
             url_params['cursor'] = params.cursor
         if params.limit:
@@ -282,8 +301,10 @@ class AsyncEmergeQueryClient:
             result = response.json()
             return QueryResult(
                 data=result['data'],
-                cursor=result.get('cursor'),
-                has_more=result.get('has_more', False)
+                count=result.get('count', len(result['data'])),
+                has_more=result.get('has_more', False),
+                next_cursor=result.get('next_cursor'),
+                applied_ingested_end=result.get('applied_ingested_end')
             )
 
     async def get_search(self, params: QueryParams) -> QueryResult:
@@ -302,25 +323,27 @@ class AsyncEmergeQueryClient:
         self,
         fetcher: Callable[[QueryParams], Awaitable[QueryResult]],
         uid: str,
-        ingested_after: Optional[str] = None
-    ) -> list[dict]:
+        ingested_begin: Optional[str] = None
+    ) -> tuple[list[dict], Optional[str]]:
         all_data = []
         cursor = None
+        applied_end = None
 
         while True:
             params = QueryParams(
                 uid=uid,
-                ingested_after=ingested_after,
+                ingested_begin=ingested_begin,
                 cursor=cursor
             )
             result = await fetcher(params)
             all_data.extend(result.data)
+            applied_end = result.applied_ingested_end
 
             if not result.has_more:
                 break
-            cursor = result.cursor
+            cursor = result.next_cursor
 
-        return all_data
+        return all_data, applied_end
 ```
 
 ## Webhook Handler
@@ -333,9 +356,20 @@ from dataclasses import dataclass
 from typing import Literal
 
 
+WebhookEvent = Literal[
+    'consent.given',
+    'consent.revoked',
+    'consent.expiring',
+    'consent.completed',
+    'export.completed',
+    'export.failed',
+    'token.needs_reauth'
+]
+
+
 @dataclass
 class WebhookPayload:
-    event: Literal['export.completed', 'export.failed', 'consent.revoked']
+    event: WebhookEvent
     timestamp: str
     data: dict
 
@@ -375,7 +409,7 @@ import os
 # Initialize clients
 config = EmergeConfig(
     client_id=os.environ['EMERGE_CLIENT_ID'],
-    client_secret=os.environ['EMERGE_CLIENT_SECRET'],
+    signing_secret=os.environ['EMERGE_SIGNING_SECRET'],
     api_token=os.environ['EMERGE_API_TOKEN'],
     redirect_uri='https://yourapp.com/emerge/callback'
 )
@@ -389,14 +423,17 @@ print(f'Consent URL: {result.url}')
 
 # After consent, query data
 search_result = query_client.get_search(QueryParams(uid='user_12345'))
-print(f'Search queries: {len(search_result.data)}')
+print(f'Search queries: {search_result.count}')
 
 # Fetch all with pagination
-all_browsing = query_client.fetch_all(
+all_browsing, applied_end = query_client.fetch_all(
     query_client.get_browsing,
     uid='user_12345'
 )
 print(f'Total browsing entries: {len(all_browsing)}')
+
+# Delta sync - use applied_end for next sync
+next_sync_start = applied_end
 ```
 
 ## FastAPI Integration
@@ -404,8 +441,17 @@ print(f'Total browsing entries: {len(all_browsing)}')
 ```python
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import RedirectResponse
+import os
 
 app = FastAPI()
+
+# Initialize clients
+config = EmergeConfig(
+    client_id=os.environ['EMERGE_CLIENT_ID'],
+    signing_secret=os.environ['EMERGE_SIGNING_SECRET'],
+    api_token=os.environ['EMERGE_API_TOKEN'],
+    redirect_uri='https://yourapp.com/emerge/callback'
+)
 
 link_client = EmergeLinkClient(config)
 webhook_handler = EmergeWebhookHandler(os.environ['EMERGE_WEBHOOK_SECRET'])
@@ -448,8 +494,13 @@ async def webhook(request: Request):
         raise HTTPException(status_code=401, detail='Invalid signature')
 
     if payload.event == 'export.completed':
-        # Process completed export
         print(f"Data ready for user {payload.data['uid']}")
+    elif payload.event == 'consent.revoked':
+        print(f"Consent revoked for user {payload.data['uid']}")
+    elif payload.event == 'consent.expiring':
+        print(f"Consent expiring for user {payload.data['uid']}")
+    elif payload.event == 'token.needs_reauth':
+        print(f"Token needs reauth for user {payload.data['uid']}")
 
     return {'status': 'ok'}
 ```

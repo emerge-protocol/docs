@@ -8,7 +8,7 @@ Generate signed URLs server-side to initiate the consent flow. Each link is uniq
 ## URL structure
 
 ```
-https://link.emergedata.ai/link?client_id=...&redirect_uri=...&state=...&timestamp=...&signature=...
+https://link.emergedata.ai/link/start?client_id=...&redirect_uri=...&state=...&timestamp=...&signature=...
 ```
 
 ## Required parameters
@@ -18,7 +18,7 @@ https://link.emergedata.ai/link?client_id=...&redirect_uri=...&state=...&timesta
 | `client_id` | string | Your client identifier from the Control Room |
 | `redirect_uri` | string | URL to redirect after consent (must be registered) |
 | `state` | string | Random string for CSRF protection (you verify this in callback) |
-| `timestamp` | string | Unix timestamp in seconds |
+| `timestamp` | string | ISO 8601 timestamp (e.g., `2024-01-15T10:30:00.000Z`) |
 | `signature` | string | HMAC-SHA256 signature of sorted parameters |
 
 ## Optional parameters
@@ -38,14 +38,14 @@ import crypto from 'crypto';
 
 interface LinkParams {
   clientId: string;
-  clientSecret: string;
+  signingSecret: string;
   redirectUri: string;
   userId?: string;
   locale?: string;
 }
 
 function createLinkUrl(params: LinkParams): string {
-  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const timestamp = new Date().toISOString();
   const state = crypto.randomBytes(16).toString('hex');
 
   // Build parameters object
@@ -64,23 +64,23 @@ function createLinkUrl(params: LinkParams): string {
     urlParams.locale = params.locale;
   }
 
-  // Sort and create signature base
+  // Sort and create signature base (raw values, not URL-encoded)
   const sortedKeys = Object.keys(urlParams).sort();
   const signatureBase = sortedKeys
-    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(urlParams[key])}`)
+    .map(key => `${key}=${urlParams[key]}`)
     .join('&');
 
   // Generate signature
   const signature = crypto
-    .createHmac('sha256', params.clientSecret)
+    .createHmac('sha256', params.signingSecret)
     .update(signatureBase)
     .digest('hex');
 
-  // Build final URL
+  // Build final URL (URLSearchParams handles encoding)
   const finalParams = new URLSearchParams(urlParams);
   finalParams.append('signature', signature);
 
-  return `https://link.emergedata.ai/link?${finalParams.toString()}`;
+  return `https://link.emergedata.ai/link/start?${finalParams.toString()}`;
 }
 
 // Store state for verification in callback
@@ -90,7 +90,7 @@ function createLinkWithStateTracking(params: LinkParams): {
   url: string;
   state: string;
 } {
-  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const timestamp = new Date().toISOString();
   const state = crypto.randomBytes(16).toString('hex');
 
   // Store state for later verification
@@ -113,11 +113,11 @@ function createLinkWithStateTracking(params: LinkParams): {
 
   const sortedKeys = Object.keys(urlParams).sort();
   const signatureBase = sortedKeys
-    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(urlParams[key])}`)
+    .map(key => `${key}=${urlParams[key]}`)
     .join('&');
 
   const signature = crypto
-    .createHmac('sha256', params.clientSecret)
+    .createHmac('sha256', params.signingSecret)
     .update(signatureBase)
     .digest('hex');
 
@@ -125,7 +125,7 @@ function createLinkWithStateTracking(params: LinkParams): {
   finalParams.append('signature', signature);
 
   return {
-    url: `https://link.emergedata.ai/link?${finalParams.toString()}`,
+    url: `https://link.emergedata.ai/link/start?${finalParams.toString()}`,
     state: state
   };
 }
@@ -136,21 +136,22 @@ import hmac
 import hashlib
 import time
 import secrets
-from urllib.parse import urlencode, quote
+from datetime import datetime, timezone
+from urllib.parse import urlencode
 from dataclasses import dataclass
 from typing import Optional
 
 @dataclass
 class LinkParams:
     client_id: str
-    client_secret: str
+    signing_secret: str
     redirect_uri: str
     user_id: Optional[str] = None
     locale: Optional[str] = None
 
 
 def create_link_url(params: LinkParams) -> str:
-    timestamp = str(int(time.time()))
+    timestamp = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
     state = secrets.token_hex(16)
 
     # Build parameters dict
@@ -167,23 +168,20 @@ def create_link_url(params: LinkParams) -> str:
     if params.locale:
         url_params['locale'] = params.locale
 
-    # Sort and create signature base
+    # Sort and create signature base (raw values, not URL-encoded)
     sorted_items = sorted(url_params.items())
-    signature_base = '&'.join(
-        f'{quote(str(k), safe="")}={quote(str(v), safe="")}'
-        for k, v in sorted_items
-    )
+    signature_base = '&'.join(f'{k}={v}' for k, v in sorted_items)
 
     # Generate signature
     signature = hmac.new(
-        params.client_secret.encode(),
+        params.signing_secret.encode(),
         signature_base.encode(),
         hashlib.sha256
     ).hexdigest()
 
     # Build final URL
     url_params['signature'] = signature
-    return f'https://link.emergedata.ai/link?{urlencode(url_params)}'
+    return f'https://link.emergedata.ai/link/start?{urlencode(url_params)}'
 
 
 # With state tracking for verification
@@ -191,7 +189,7 @@ state_store: dict[str, dict] = {}
 
 
 def create_link_with_state_tracking(params: LinkParams) -> tuple[str, str]:
-    timestamp = str(int(time.time()))
+    timestamp = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
     state = secrets.token_hex(16)
 
     # Store state for later verification
@@ -212,19 +210,16 @@ def create_link_with_state_tracking(params: LinkParams) -> tuple[str, str]:
         url_params['uid'] = params.user_id
 
     sorted_items = sorted(url_params.items())
-    signature_base = '&'.join(
-        f'{quote(str(k), safe="")}={quote(str(v), safe="")}'
-        for k, v in sorted_items
-    )
+    signature_base = '&'.join(f'{k}={v}' for k, v in sorted_items)
 
     signature = hmac.new(
-        params.client_secret.encode(),
+        params.signing_secret.encode(),
         signature_base.encode(),
         hashlib.sha256
     ).hexdigest()
 
     url_params['signature'] = signature
-    url = f'https://link.emergedata.ai/link?{urlencode(url_params)}'
+    url = f'https://link.emergedata.ai/link/start?{urlencode(url_params)}'
 
     return url, state
 ```
@@ -238,7 +233,7 @@ def create_link_with_state_tracking(params: LinkParams) -> tuple[str, str]:
 ```typescript
 const url = createLinkUrl({
   clientId: process.env.EMERGE_CLIENT_ID!,
-  clientSecret: process.env.EMERGE_CLIENT_SECRET!,
+  signingSecret: process.env.EMERGE_SIGNING_SECRET!,
   redirectUri: 'https://yourapp.com/emerge/callback',
   userId: 'user_12345'
 });
@@ -259,7 +254,7 @@ app.get('/connect-data', (req, res) => {
 
   const { url, state } = createLinkWithStateTracking({
     clientId: process.env.EMERGE_CLIENT_ID!,
-    clientSecret: process.env.EMERGE_CLIENT_SECRET!,
+    signingSecret: process.env.EMERGE_SIGNING_SECRET!,
     redirectUri: 'https://yourapp.com/emerge/callback',
     userId: userId
   });
@@ -276,6 +271,7 @@ app.get('/connect-data', (req, res) => {
 ```python
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
+import os
 
 app = FastAPI()
 
@@ -285,7 +281,7 @@ async def connect_data(request: Request):
 
     url, state = create_link_with_state_tracking(LinkParams(
         client_id=os.environ['EMERGE_CLIENT_ID'],
-        client_secret=os.environ['EMERGE_CLIENT_SECRET'],
+        signing_secret=os.environ['EMERGE_SIGNING_SECRET'],
         redirect_uri='https://yourapp.com/emerge/callback',
         user_id=user_id
     ))
@@ -305,3 +301,17 @@ async def connect_data(request: Request):
 <Note>
 Generate links on-demand rather than storing them. This ensures the timestamp is always fresh.
 </Note>
+
+## Signature algorithm
+
+The signature ensures the link hasn't been tampered with:
+
+1. Collect all URL parameters (except `signature`)
+2. Sort parameters alphabetically by key
+3. Join as `key=value&key=value` (raw values, not URL-encoded)
+4. Generate HMAC-SHA256 using your signing secret
+5. Append signature as hex string
+
+<Warning>
+The signature base uses **raw parameter values**, not URL-encoded values. URL encoding is only applied when constructing the final URL.
+</Warning>

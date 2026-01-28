@@ -3,72 +3,25 @@ title: "Changelog"
 description: "API updates and documentation changes"
 ---
 
-## v0.0.9
+## v1.0.0
 
-Current version.
+Initial release.
 
-### New Features
+### Features
 
-- **Gmail data support** - Query user email receipt data for purchase insights
-- **Delta queries** - Use `ingested_after` parameter for incremental syncs
-- **Webhook signatures** - HMAC-SHA256 verification for webhook security
+- **Emerge Link** - Consent flow for collecting user data permissions
+- **Query API** - Sync and async endpoints for retrieving user data
+- **Webhook notifications** - Real-time updates for consent and export events
+- **SDK support** - TypeScript and Python reference implementations
 
-### Improvements
+### Data Types
 
-- Faster export processing (average 5 minutes, down from 15)
-- Better error messages for insufficient data scenarios
-- Expanded locale support for consent flow UI
+- Search history
+- Browsing history
+- YouTube watch history
+- Ad interactions
 
-### API Changes
+### AI Integration
 
-- Added `record_counts` field to `export.completed` webhook payload
-- New `data_invalid` error code for insufficient data failures
-- Export status endpoint now includes `data_types` array
-
----
-
-## v0.0.8
-
-### New Features
-
-- **Async query endpoints** - Start long-running queries without timeout concerns
-- **Job management** - List and monitor async query jobs
-- **Consent status API** - Check if a user has granted consent
-
-### Improvements
-
-- Reduced consent flow steps from 4 to 2
-- Mobile-optimized OAuth popup handling
-- Better error modals with contextual messaging
-
----
-
-## v0.0.7
-
-### New Features
-
-- **Sync query endpoints** - Immediate response for smaller datasets
-- **Browsing history** - Query Chrome browsing data
-- **YouTube history** - Query watched video data
-
-### Breaking Changes
-
-- Callback `provider` parameter renamed to `flow_version`
-- State parameter now required in signed URLs
-
----
-
-## v0.0.6
-
-### New Features
-
-- **Search history queries** - Query user Google search history
-- **HMAC-signed URLs** - Secure consent link generation
-- **Webhook notifications** - Get notified when data is ready
-
-### Initial Release
-
-First public release of Emerge API with:
-- Link consent flow
-- Basic Query API
-- Control Room dashboard
+- MCP server for AI tool integration
+- Contextual menu for one-click AI actions

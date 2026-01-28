@@ -1,30 +1,34 @@
 # Emerge API Documentation
 
 ## Project overview
-Mintlify-based documentation for Emerge API - a privacy-first API for accessing consented user data. The project includes Link API (consent collection) and Query API (data retrieval).
+Documentation for Emerge API - a privacy-first API for accessing consented user data. The project includes Link API (consent collection) and Query API (data retrieval).
 
 ## Technical stack
 - Format: MDX files with YAML frontmatter
-- Build system: Mintlify
+- Build system: Cloud-hosted docs platform (auto-deploys from GitHub)
 - Config: docs.json (navigation, theme, branding)
-- OpenAPI spec: openapi/emerge.json (v0.0.9)
+- OpenAPI spec: openapi/emerge.json (v1.0.0)
 - AI integration: MCP (Model Context Protocol) enabled
+- Local dev: `mint dev` (requires global CLI: `npm i -g mint`)
+- Preview URL: http://localhost:3000
 
 ## Content structure
 
-### Main sections
+### Main sections (tabs in docs.json)
 - **Guides** (`/`) - Getting started, quickstart, SDKs, changelog
 - **Link API** (`/link/`) - Consent flow integration (authentication, signed URLs, callbacks, webhooks)
 - **Query API** (`/query/`) - Data retrieval (sync/async patterns, pagination)
-- **AI Integration** (`/ai/`) - MCP setup, contextual menu, examples
+- **AI Integration** (`/ai/`) - MCP setup, contextual menu, examples, tool-specific guides
 
 ### Key files
 - `index.mdx` - Homepage with product overview and navigation
 - `quickstart.mdx` - 30-minute integration guide
-- `AGENTS.md` - AI-specific documentation guidelines
-- `changelog.mdx` - Version history (current: v0.0.9)
-- `docs.json` - Navigation structure and Mintlify configuration
+- `AGENTS.md` - AI-specific documentation guidelines (code examples, API patterns, terminology)
+- `CLAUDE.md` - This file - project memory for AI agents
+- `changelog.mdx` - Version history (current: v1.0.0)
+- `docs.json` - Navigation structure, configuration, theme colors
 - `openapi/emerge.json` - OpenAPI 3.1 spec for API reference
+- `README.md` - Documentation development guide
 
 ## Writing standards
 
@@ -64,9 +68,14 @@ Every endpoint must document:
 - Error code handling
 
 **Querying data:**
-- Sync vs async tradeoffs
+- Sync vs async tradeoffs (30s timeout vs job-based polling)
 - Pagination with cursor parameter
 - Delta queries with ingested_after
+
+**Webhooks:**
+- Event types: `consent.granted`, `export.completed`, `export.failed`
+- HMAC-SHA256 signature verification (X-Emerge-Signature header)
+- Payload includes status, uid, timestamps, record_counts
 
 ## Content strategy
 - Document just enough for user success
@@ -86,11 +95,44 @@ description: Concise summary for SEO/navigation
 ```
 
 ## File organization
-- `/link/*.mdx` - Link API guides
-- `/query/*.mdx` - Query API guides
-- `/ai/*.mdx` - AI integration docs
-- `/sdks/*.mdx` - SDK implementations (TypeScript, Python)
-- `/openapi/` - OpenAPI specifications
+- `/link/*.mdx` - Link API guides (overview, authentication, create-link, callbacks, webhooks)
+- `/query/*.mdx` - Query API guides (overview, pagination)
+- `/ai/*.mdx` - AI integration docs (overview, mcp-setup, contextual-menu, examples)
+- `/ai-tools/*.mdx` - AI tool-specific setup guides (claude-code, cursor, windsurf) [Note: Directory exists in git but not filesystem - may be template content]
+- `/sdks/*.mdx` - SDK implementations (TypeScript, Python) - Copy-paste reference implementations
+- `/api-reference/` - Legacy API reference pages (deprecated - use OpenAPI auto-generated pages)
+- `/openapi/emerge.json` - OpenAPI 3.1 spec with Link and Query API endpoints
+- `/essentials/` - Template content (code, images, markdown, navigation, etc.)
+- `/snippets/` - Reusable content snippets
+- `/images/` - Documentation images and diagrams
+- `/logo/` - Brand assets (light.svg, dark.svg)
+
+## Build and development
+
+### Local preview
+```bash
+# Install docs CLI globally
+npm i -g mint
+
+# Run dev server (from docs root, where docs.json is located)
+mint dev
+
+# View at http://localhost:3000
+```
+
+### Common commands
+```bash
+# Update CLI to latest version
+mint update
+
+# Validate docs.json and OpenAPI spec
+mint validate
+```
+
+### Deployment
+- Auto-deploys via GitHub integration
+- Push to main branch → automatic production deployment
+- No manual build step required
 
 ## Git workflow
 - NEVER use --no-verify when committing
@@ -107,6 +149,25 @@ description: Concise summary for SEO/navigation
 - Provide only one language example (need both TS and Python)
 - Skip error handling in code examples
 
+## Available data types
+
+| Data Type | Sync Endpoint | Async Endpoint | Description |
+|-----------|---------------|----------------|-------------|
+| Search History | `/v1/sync/get_search` | `/v1/search` | Google search queries with timestamps |
+| Browsing History | `/v1/sync/get_browsing` | `/v1/browsing` | Chrome page visits with titles |
+| YouTube History | `/v1/sync/get_youtube` | `/v1/youtube` | Watched videos with channels |
+| Ad Interactions | `/v1/sync/get_ads` | `/v1/ads` | Ad clicks and views |
+
+### Link API endpoints
+- `POST /configs` - Create/update consent flow configuration
+- `GET /consent/status/{uid}` - Check if user has granted consent
+- `GET /export/status/{uid}` - Check data export status
+
+### Query API endpoints
+- Sync endpoints: 30s timeout, immediate response
+- Async endpoints: Job-based polling via `/v1/job/{task_id}`
+- Job management: `GET /v1/jobs` lists all jobs
+
 ## Terminology
 - "Emerge Link" - The consent flow product
 - "Control Room" - Dashboard at dashboard.emergedata.ai
@@ -115,11 +176,27 @@ description: Concise summary for SEO/navigation
 - "query" - Retrieving user data via API
 - "flow_version" - Consent flow variant (lm = Gmail flow)
 - "uid" or "partner_uid" - Partner's user identifier
+- "task_id" - Async query job identifier
 
 ## API domains
 - Link API: https://link.emergedata.ai
 - Query API: https://query.emergedata.ai
 - Dashboard: https://dashboard.emergedata.ai
+- MCP Server: https://emerge.mintlify.dev/mcp (AI tool integration)
+- Docs site: https://emerge.mintlify.dev (or custom domain if configured)
+
+## AI-native features
+
+### MCP (Model Context Protocol)
+- MCP server auto-generated at `/mcp` endpoint
+- AI tools can search and query documentation semantically
+- Configuration examples in `/ai/mcp-setup.mdx` for Claude, Cursor, VS Code, Claude Code
+
+### Contextual menu
+- Enabled via `docs.json` "contextual" section
+- Options: copy, view, chatgpt, claude, perplexity, mcp, cursor, vscode
+- Right-click any code block or text selection for AI-powered actions
+- Examples documented in `/ai/contextual-menu.mdx`
 
 ## Working relationship
 - Push back on ideas with citations and reasoning

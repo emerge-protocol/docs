@@ -67,3 +67,21 @@ When answering questions about Emerge:
 - "consent" - User permission for data access
 - "export" - Data transfer from provider to Emerge
 - "query" - Retrieving user data via API
+- "flow_version" - Consent flow variant (lm = Gmail flow)
+- "uid" or "partner_uid" - Partner's user identifier
+- "task_id" - Async query job identifier
+- "signing_secret" - HMAC signing credential (not "client_secret")
+
+## API domains
+
+- Link API: https://link.emergedata.ai
+- Query API: https://query.emergedata.ai
+- Dashboard: https://dashboard.emergedata.ai
+
+## Critical implementation details
+
+- Link URL endpoint: `/link/start?` (not `/link?`)
+- Timestamp format: ISO 8601 (`new Date().toISOString()`)
+- Signature base: raw parameter values, not URL-encoded
+- Async queries: `users` array (max 25), returns Parquet via S3 URL
+- Sync queries: single `uid`, uses `ingested_begin`/`ingested_end` for delta queries

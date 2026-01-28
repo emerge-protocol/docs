@@ -1,16 +1,15 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "name": "Emerge API",
-  "theme": "mint",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#1E3A5F",
+    "light": "#2E5A8F",
+    "dark": "#1E3A5F"
   },
   "favicon": "/favicon.svg",
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "/logo/emerge-logo.svg",
+    "dark": "/logo/emerge-logo.svg"
   },
   "api": {
     "playground": {

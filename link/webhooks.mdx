@@ -9,9 +9,13 @@ Webhooks notify your application when user data is ready to query. This is more 
 
 | Event | Description |
 |-------|-------------|
+| `consent.given` | User granted consent |
+| `consent.revoked` | User revoked consent |
+| `consent.expiring` | Consent will expire soon (7 days warning) |
+| `consent.completed` | Consent flow completed successfully |
 | `export.completed` | Data export finished, ready to query |
 | `export.failed` | Export failed (usually insufficient data) |
-| `consent.revoked` | User revoked consent |
+| `token.needs_reauth` | OAuth token expired, user needs to reauthorize |
 
 ## Webhook payload
 
@@ -24,14 +28,81 @@ All webhooks follow this structure:
   "data": {
     "uid": "user_12345",
     "client_id": "your_client_id",
-    "provider": "google-gmail",
-    "data_types": ["search", "browsing", "youtube", "ads"]
-  },
-  "signature": "hmac_signature_here"
+    "provider": "google-gmail"
+  }
 }
 ```
 
 ## Event details
+
+### consent.given
+
+Sent when a user grants consent for the first time.
+
+```json
+{
+  "event": "consent.given",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "data": {
+    "uid": "user_12345",
+    "client_id": "your_client_id",
+    "provider": "google-gmail",
+    "scopes": ["email.read", "profile"],
+    "valid_until": "2025-01-15T10:30:00Z"
+  }
+}
+```
+
+### consent.revoked
+
+Sent when a user revokes their consent (e.g., via Google account settings or your application).
+
+```json
+{
+  "event": "consent.revoked",
+  "timestamp": "2024-01-15T10:35:00Z",
+  "data": {
+    "uid": "user_12345",
+    "client_id": "your_client_id",
+    "provider": "google-gmail",
+    "revoked_at": "2024-01-15T10:34:00Z"
+  }
+}
+```
+
+### consent.expiring
+
+Sent 7 days before consent expires. Use this to prompt users to reauthorize.
+
+```json
+{
+  "event": "consent.expiring",
+  "timestamp": "2024-01-08T10:30:00Z",
+  "data": {
+    "uid": "user_12345",
+    "client_id": "your_client_id",
+    "provider": "google-gmail",
+    "expires_at": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+### consent.completed
+
+Sent when the consent flow completes successfully (user finished all steps).
+
+```json
+{
+  "event": "consent.completed",
+  "timestamp": "2024-01-15T10:32:00Z",
+  "data": {
+    "uid": "user_12345",
+    "client_id": "your_client_id",
+    "provider": "google-gmail",
+    "is_reauthorization": false
+  }
+}
+```
 
 ### export.completed
 
@@ -74,19 +145,19 @@ Sent when an export fails, usually due to insufficient data.
 }
 ```
 
-### consent.revoked
+### token.needs_reauth
 
-Sent when a user revokes their consent (e.g., via Google account settings).
+Sent when the OAuth token has expired or been revoked and the user needs to reauthorize.
 
 ```json
 {
-  "event": "consent.revoked",
+  "event": "token.needs_reauth",
   "timestamp": "2024-01-15T10:35:00Z",
   "data": {
     "uid": "user_12345",
     "client_id": "your_client_id",
     "provider": "google-gmail",
-    "revoked_at": "2024-01-15T10:34:00Z"
+    "reason": "token_expired"
   }
 }
 ```
@@ -99,6 +170,24 @@ Configure your webhook endpoint in the Control Room:
 2. Enter your webhook URL (must be HTTPS)
 3. Select events to receive
 4. Save and test
+
+Alternatively, set the `webhook_url` when configuring your flow:
+
+```typescript
+await fetch('https://link.emergedata.ai/configs', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${API_TOKEN}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    config_name: 'default',
+    company_name: 'Your Company',
+    // ...other config
+    webhook_url: 'https://yourapp.com/webhooks/emerge'
+  })
+});
+```
 
 ## Handling webhooks
 
@@ -132,6 +221,18 @@ app.post('/webhooks/emerge', async (req, res) => {
   const { event, data } = req.body;
 
   switch (event) {
+    case 'consent.given':
+      await handleConsentGiven(data);
+      break;
+
+    case 'consent.revoked':
+      await handleConsentRevoked(data);
+      break;
+
+    case 'consent.expiring':
+      await handleConsentExpiring(data);
+      break;
+
     case 'export.completed':
       await handleExportCompleted(data);
       break;
@@ -140,8 +241,8 @@ app.post('/webhooks/emerge', async (req, res) => {
       await handleExportFailed(data);
       break;
 
-    case 'consent.revoked':
-      await handleConsentRevoked(data);
+    case 'token.needs_reauth':
+      await handleTokenNeedsReauth(data);
       break;
 
     default:
@@ -152,46 +253,43 @@ app.post('/webhooks/emerge', async (req, res) => {
   res.status(200).send('OK');
 });
 
+async function handleConsentGiven(data: { uid: string }) {
+  console.log(`Consent granted for user ${data.uid}`);
+  // Update user record, prepare for data
+}
+
+async function handleConsentRevoked(data: { uid: string }) {
+  console.log(`Consent revoked for user ${data.uid}`);
+  // Delete user data per GDPR requirements
+  await deleteUserData(data.uid);
+}
+
+async function handleConsentExpiring(data: { uid: string; expires_at: string }) {
+  console.log(`Consent expiring for user ${data.uid} at ${data.expires_at}`);
+  // Send reminder email to user
+  await sendReauthorizationReminder(data.uid);
+}
+
 async function handleExportCompleted(data: {
   uid: string;
   data_types: string[];
   record_counts: Record<string, number>;
 }) {
   console.log(`Data ready for user ${data.uid}`);
-
-  // Update user record
-  await db.users.update({
-    where: { id: data.uid },
-    data: {
-      dataReady: true,
-      dataTypes: data.data_types,
-      lastExportAt: new Date()
-    }
-  });
-
   // Trigger data processing
   await processUserData(data.uid);
 }
 
-async function handleExportFailed(data: {
-  uid: string;
-  reason: string;
-}) {
+async function handleExportFailed(data: { uid: string; reason: string }) {
   console.log(`Export failed for user ${data.uid}: ${data.reason}`);
-
   // Notify user
-  await sendEmail(data.uid, 'export_failed', {
-    reason: data.reason
-  });
+  await notifyExportFailed(data.uid, data.reason);
 }
 
-async function handleConsentRevoked(data: {
-  uid: string;
-}) {
-  console.log(`Consent revoked for user ${data.uid}`);
-
-  // Delete user data per GDPR requirements
-  await deleteUserData(data.uid);
+async function handleTokenNeedsReauth(data: { uid: string }) {
+  console.log(`Token needs reauth for user ${data.uid}`);
+  // Prompt user to reauthorize
+  await sendReauthorizationRequest(data.uid);
 }
 ```
 
@@ -200,6 +298,7 @@ from fastapi import FastAPI, Request, HTTPException
 import hmac
 import hashlib
 import json
+import os
 
 app = FastAPI()
 
@@ -225,12 +324,18 @@ async def emerge_webhook(request: Request):
     event = body['event']
     data = body['data']
 
-    if event == 'export.completed':
+    if event == 'consent.given':
+        await handle_consent_given(data)
+    elif event == 'consent.revoked':
+        await handle_consent_revoked(data)
+    elif event == 'consent.expiring':
+        await handle_consent_expiring(data)
+    elif event == 'export.completed':
         await handle_export_completed(data)
     elif event == 'export.failed':
         await handle_export_failed(data)
-    elif event == 'consent.revoked':
-        await handle_consent_revoked(data)
+    elif event == 'token.needs_reauth':
+        await handle_token_needs_reauth(data)
     else:
         print(f'Unknown event: {event}')
 
@@ -238,18 +343,29 @@ async def emerge_webhook(request: Request):
     return {'status': 'ok'}
 
 
+async def handle_consent_given(data: dict):
+    uid = data['uid']
+    print(f'Consent granted for user {uid}')
+
+
+async def handle_consent_revoked(data: dict):
+    uid = data['uid']
+    print(f'Consent revoked for user {uid}')
+    # Delete user data per GDPR requirements
+    await delete_user_data(uid)
+
+
+async def handle_consent_expiring(data: dict):
+    uid = data['uid']
+    expires_at = data['expires_at']
+    print(f'Consent expiring for user {uid} at {expires_at}')
+    # Send reminder email
+    await send_reauthorization_reminder(uid)
+
+
 async def handle_export_completed(data: dict):
     uid = data['uid']
     print(f'Data ready for user {uid}')
-
-    # Update user record
-    await db.users.update(
-        uid,
-        data_ready=True,
-        data_types=data['data_types'],
-        last_export_at=datetime.utcnow()
-    )
-
     # Trigger data processing
     await process_user_data(uid)
 
@@ -258,17 +374,15 @@ async def handle_export_failed(data: dict):
     uid = data['uid']
     reason = data['reason']
     print(f'Export failed for user {uid}: {reason}')
-
     # Notify user
-    await send_email(uid, 'export_failed', reason=reason)
+    await notify_export_failed(uid, reason)
 
 
-async def handle_consent_revoked(data: dict):
+async def handle_token_needs_reauth(data: dict):
     uid = data['uid']
-    print(f'Consent revoked for user {uid}')
-
-    # Delete user data per GDPR requirements
-    await delete_user_data(uid)
+    print(f'Token needs reauth for user {uid}')
+    # Prompt user to reauthorize
+    await send_reauthorization_request(uid)
 ```
 
 </CodeGroup>

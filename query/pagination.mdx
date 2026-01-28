@@ -7,13 +7,14 @@ Query API responses can contain thousands of records. Use pagination to retrieve
 
 ## Cursor-based pagination
 
-Every response includes a `cursor` for fetching the next page:
+Every response includes a `next_cursor` for fetching the next page:
 
 ```json
 {
   "data": [...],
-  "cursor": "eyJsYXN0X2lkIjogMTIzNH0=",
-  "has_more": true
+  "count": 100,
+  "has_more": true,
+  "next_cursor": "eyJsYXN0X2lkIjogMTIzNH0="
 }
 ```
 
@@ -40,7 +41,7 @@ async function fetchAllSearchHistory(uid: string) {
     const result = await response.json();
     allData.push(...result.data);
 
-    cursor = result.has_more ? result.cursor : undefined;
+    cursor = result.has_more ? result.next_cursor : undefined;
   } while (cursor);
 
   return allData;
@@ -48,7 +49,7 @@ async function fetchAllSearchHistory(uid: string) {
 ```
 
 ```python Python
-async def fetch_all_search_history(uid: str) -> list[dict]:
+def fetch_all_search_history(uid: str) -> list[dict]:
     all_data = []
     cursor = None
 
@@ -68,7 +69,7 @@ async def fetch_all_search_history(uid: str) -> list[dict]:
 
         if not result.get('has_more'):
             break
-        cursor = result['cursor']
+        cursor = result['next_cursor']
 
     return all_data
 ```
@@ -90,10 +91,10 @@ curl 'https://query.emergedata.ai/v1/sync/get_search?uid=user_123&limit=500' \
 
 ## Delta queries
 
-Fetch only data that's been ingested since your last sync using `ingested_after`:
+Fetch only data that's been ingested since your last sync using `ingested_begin` and `ingested_end`:
 
 ```bash
-curl 'https://query.emergedata.ai/v1/sync/get_search?uid=user_123&ingested_after=2024-01-15T00:00:00Z' \
+curl 'https://query.emergedata.ai/v1/sync/get_search?uid=user_123&ingested_begin=2024-01-15T00:00:00Z' \
   -H 'Authorization: Bearer your_api_token'
 ```
 
@@ -101,12 +102,30 @@ curl 'https://query.emergedata.ai/v1/sync/get_search?uid=user_123&ingested_after
 
 | Parameter | Description | Format |
 |-----------|-------------|--------|
-| `ingested_after` | Records ingested after this time | ISO 8601 |
-| `ingested_before` | Records ingested before this time | ISO 8601 |
+| `ingested_begin` | Records ingested at or after this time | ISO 8601 |
+| `ingested_end` | Records ingested before this time | ISO 8601 |
 
 <Note>
-`ingested_after` and `ingested_before` filter by when data was added to Emerge, not when the user performed the action. This is useful for incremental syncs.
+`ingested_begin` and `ingested_end` filter by when data was added to Emerge, not when the user performed the action. This is useful for incremental syncs.
 </Note>
+
+### Response fields for delta sync
+
+The response includes additional fields to help with delta syncing:
+
+```json
+{
+  "data": [...],
+  "count": 50,
+  "has_more": false,
+  "next_cursor": null,
+  "applied_ingested_end": "2024-01-15T12:00:00Z"
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `applied_ingested_end` | The actual end time used for filtering. Use this as your next `ingested_begin` value to ensure no gaps. |
 
 ### Delta sync pattern
 
@@ -114,19 +133,17 @@ curl 'https://query.emergedata.ai/v1/sync/get_search?uid=user_123&ingested_after
 
 ```typescript TypeScript
 interface SyncState {
-  lastSyncTime: string;
-  lastCursor?: string;
+  lastIngestedEnd: string;
 }
 
 async function deltaSync(uid: string, state: SyncState): Promise<SyncState> {
   const newData: SearchEntry[] = [];
-  let cursor = state.lastCursor;
-  const syncStartTime = new Date().toISOString();
+  let cursor: string | undefined;
 
   do {
     const params = new URLSearchParams({
       uid,
-      ingested_after: state.lastSyncTime
+      ingested_begin: state.lastIngestedEnd
     });
     if (cursor) {
       params.set('cursor', cursor);
@@ -140,22 +157,28 @@ async function deltaSync(uid: string, state: SyncState): Promise<SyncState> {
     const result = await response.json();
     newData.push(...result.data);
 
-    cursor = result.has_more ? result.cursor : undefined;
+    // Use applied_ingested_end for next sync to avoid gaps
+    const appliedEnd = result.applied_ingested_end;
+
+    cursor = result.has_more ? result.next_cursor : undefined;
+
+    // After last page, update state
+    if (!cursor) {
+      return {
+        lastIngestedEnd: appliedEnd
+      };
+    }
   } while (cursor);
 
   // Process new data
   await processNewData(newData);
 
-  // Return new state for next sync
-  return {
-    lastSyncTime: syncStartTime,
-    lastCursor: undefined
-  };
+  return state;
 }
 
 // Usage
 let syncState: SyncState = {
-  lastSyncTime: '2024-01-01T00:00:00Z'
+  lastIngestedEnd: '2024-01-01T00:00:00Z'
 };
 
 // Run periodically
@@ -164,24 +187,22 @@ syncState = await deltaSync('user_123', syncState);
 
 ```python Python
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Optional
 
 @dataclass
 class SyncState:
-    last_sync_time: str
-    last_cursor: Optional[str] = None
+    last_ingested_end: str
 
 
-async def delta_sync(uid: str, state: SyncState) -> SyncState:
+def delta_sync(uid: str, state: SyncState) -> SyncState:
     new_data = []
-    cursor = state.last_cursor
-    sync_start_time = datetime.utcnow().isoformat() + 'Z'
+    cursor = None
+    applied_end = None
 
     while True:
         params = {
             'uid': uid,
-            'ingested_after': state.last_sync_time
+            'ingested_begin': state.last_ingested_end
         }
         if cursor:
             params['cursor'] = cursor
@@ -195,25 +216,25 @@ async def delta_sync(uid: str, state: SyncState) -> SyncState:
         result = response.json()
         new_data.extend(result['data'])
 
+        # Track applied_ingested_end for next sync
+        applied_end = result.get('applied_ingested_end')
+
         if not result.get('has_more'):
             break
-        cursor = result['cursor']
+        cursor = result['next_cursor']
 
     # Process new data
-    await process_new_data(new_data)
+    process_new_data(new_data)
 
-    # Return new state for next sync
-    return SyncState(
-        last_sync_time=sync_start_time,
-        last_cursor=None
-    )
+    # Return new state with applied_ingested_end
+    return SyncState(last_ingested_end=applied_end or state.last_ingested_end)
 
 
 # Usage
-sync_state = SyncState(last_sync_time='2024-01-01T00:00:00Z')
+sync_state = SyncState(last_ingested_end='2024-01-01T00:00:00Z')
 
 # Run periodically
-sync_state = await delta_sync('user_123', sync_state)
+sync_state = delta_sync('user_123', sync_state)
 ```
 
 </CodeGroup>
@@ -221,8 +242,8 @@ sync_state = await delta_sync('user_123', sync_state)
 ## Best practices
 
 <AccordionGroup>
-  <Accordion title="Store sync state">
-    Persist the `lastSyncTime` so you can resume delta syncs after restarts.
+  <Accordion title="Use applied_ingested_end for state">
+    Always use the `applied_ingested_end` from the response as your next `ingested_begin` value. This ensures no gaps between syncs.
   </Accordion>
   <Accordion title="Handle empty results">
     An empty `data` array with `has_more: false` means no new data since your last sync.
@@ -233,26 +254,27 @@ sync_state = await delta_sync('user_123', sync_state)
   <Accordion title="Implement backoff on errors">
     If you hit rate limits or errors, back off exponentially before retrying.
   </Accordion>
+  <Accordion title="Deduplicate with event_id">
+    Each record includes an `event_id` for deduplication. Use this to handle any potential duplicates across pagination boundaries.
+  </Accordion>
 </AccordionGroup>
 
-## Async pagination
+## Async job pagination
 
-For async queries, pagination works the same way. The job result includes a cursor:
+For async queries, results are returned as a single Parquet file. The file contains all records for all users in the request.
+
+If you need to paginate through very large async results, use the `begin` and `end` date parameters to narrow the time range:
 
 ```typescript
-const result = await fetch(
-  `https://query.emergedata.ai/v1/job/${taskId}`,
+// First batch: January 1-15
+const job1 = await fetch(
+  `https://query.emergedata.ai/v1/search?users=${users}&begin=2024-01-01&end=2024-01-15`,
   { headers: { 'Authorization': `Bearer ${API_TOKEN}` } }
 ).then(r => r.json());
 
-if (result.status === 'completed') {
-  // Use result.cursor for next page
-  if (result.cursor) {
-    // Fetch next page with new async job
-    const nextJob = await fetch(
-      `https://query.emergedata.ai/v1/search?uid=${uid}&cursor=${result.cursor}`,
-      { headers: { 'Authorization': `Bearer ${API_TOKEN}` } }
-    ).then(r => r.json());
-  }
-}
+// Second batch: January 16-31
+const job2 = await fetch(
+  `https://query.emergedata.ai/v1/search?users=${users}&begin=2024-01-16&end=2024-01-31`,
+  { headers: { 'Authorization': `Bearer ${API_TOKEN}` } }
+).then(r => r.json());
 ```

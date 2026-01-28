@@ -21,7 +21,7 @@ import crypto from 'crypto';
 
 interface EmergeConfig {
   clientId: string;
-  clientSecret: string;
+  signingSecret: string;
   apiToken: string;
   redirectUri: string;
 }
@@ -52,7 +52,8 @@ class EmergeLinkClient {
    * Create a signed link URL for the consent flow
    */
   createLinkUrl(params: LinkParams): { url: string; state: string } {
-    const timestamp = Math.floor(Date.now() / 1000).toString();
+    // Use ISO 8601 timestamp
+    const timestamp = new Date().toISOString();
     const state = crypto.randomBytes(16).toString('hex');
 
     // Store state for verification
@@ -74,22 +75,23 @@ class EmergeLinkClient {
       urlParams.locale = params.locale;
     }
 
-    // Sort and create signature
+    // Sort and create signature (raw values, NOT URL-encoded)
     const sortedKeys = Object.keys(urlParams).sort();
     const signatureBase = sortedKeys
-      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(urlParams[key])}`)
+      .map(key => `${key}=${urlParams[key]}`)
       .join('&');
 
     const signature = crypto
-      .createHmac('sha256', this.config.clientSecret)
+      .createHmac('sha256', this.config.signingSecret)
       .update(signatureBase)
       .digest('hex');
 
+    // Build final URL (URLSearchParams handles encoding)
     const finalParams = new URLSearchParams(urlParams);
     finalParams.append('signature', signature);
 
     return {
-      url: `https://link.emergedata.ai/link?${finalParams.toString()}`,
+      url: `https://link.emergedata.ai/link/start?${finalParams.toString()}`,
       state
     };
   }
@@ -132,9 +134,13 @@ class EmergeLinkClient {
    * Get consent status for a user
    */
   async getConsentStatus(uid: string): Promise<{
-    status: string;
-    consentedAt?: string;
-    provider?: string;
+    consents: Array<{
+      provider: string;
+      scopes: string[];
+      valid_until: string;
+      status: string;
+      issued_at: string;
+    }>;
   }> {
     const response = await fetch(
       `https://link.emergedata.ai/consent/status/${uid}`,
@@ -156,10 +162,10 @@ class EmergeLinkClient {
    * Get export status for a user
    */
   async getExportStatus(uid: string): Promise<{
-    status: string;
-    startedAt?: string;
-    completedAt?: string;
-    dataTypes?: string[];
+    data_ready: boolean;
+    data_landed_at?: string;
+    export_status: string;
+    export_completed_at?: string;
   }> {
     const response = await fetch(
       `https://link.emergedata.ai/export/status/${uid}`,
@@ -184,41 +190,51 @@ class EmergeLinkClient {
 ```typescript
 interface QueryParams {
   uid: string;
-  ingestedAfter?: string;
-  ingestedBefore?: string;
+  ingestedBegin?: string;
+  ingestedEnd?: string;
   cursor?: string;
   limit?: number;
 }
 
 interface QueryResult<T> {
   data: T[];
-  cursor?: string;
+  count: number;
   hasMore: boolean;
+  nextCursor?: string;
+  appliedIngestedEnd?: string;
 }
 
 interface SearchEntry {
+  event_id: string;
   query: string;
   timestamp: string;
   source: string;
+  ingested_at: string;
 }
 
 interface BrowsingEntry {
+  event_id: string;
   url: string;
   title: string;
   timestamp: string;
+  ingested_at: string;
 }
 
 interface YoutubeEntry {
-  videoId: string;
+  event_id: string;
+  video_id: string;
   title: string;
   channel: string;
   timestamp: string;
+  ingested_at: string;
 }
 
 interface AdsEntry {
+  event_id: string;
   advertiser: string;
-  adType: string;
+  ad_type: string;
   timestamp: string;
+  ingested_at: string;
 }
 
 class EmergeQueryClient {
@@ -233,11 +249,11 @@ class EmergeQueryClient {
     const url = new URL(`${this.baseUrl}${endpoint}`);
     url.searchParams.set('uid', params.uid);
 
-    if (params.ingestedAfter) {
-      url.searchParams.set('ingested_after', params.ingestedAfter);
+    if (params.ingestedBegin) {
+      url.searchParams.set('ingested_begin', params.ingestedBegin);
     }
-    if (params.ingestedBefore) {
-      url.searchParams.set('ingested_before', params.ingestedBefore);
+    if (params.ingestedEnd) {
+      url.searchParams.set('ingested_end', params.ingestedEnd);
     }
     if (params.cursor) {
       url.searchParams.set('cursor', params.cursor);
@@ -259,8 +275,10 @@ class EmergeQueryClient {
     const result = await response.json();
     return {
       data: result.data,
-      cursor: result.cursor,
-      hasMore: result.has_more
+      count: result.count,
+      hasMore: result.has_more,
+      nextCursor: result.next_cursor,
+      appliedIngestedEnd: result.applied_ingested_end
     };
   }
 
@@ -298,17 +316,19 @@ class EmergeQueryClient {
   async fetchAll<T>(
     fetcher: (params: QueryParams) => Promise<QueryResult<T>>,
     params: Omit<QueryParams, 'cursor'>
-  ): Promise<T[]> {
+  ): Promise<{ data: T[]; appliedIngestedEnd?: string }> {
     const allData: T[] = [];
     let cursor: string | undefined;
+    let appliedEnd: string | undefined;
 
     do {
       const result = await fetcher({ ...params, cursor });
       allData.push(...result.data);
-      cursor = result.hasMore ? result.cursor : undefined;
+      appliedEnd = result.appliedIngestedEnd;
+      cursor = result.hasMore ? result.nextCursor : undefined;
     } while (cursor);
 
-    return allData;
+    return { data: allData, appliedIngestedEnd: appliedEnd };
   }
 }
 ```
@@ -318,8 +338,17 @@ class EmergeQueryClient {
 ```typescript
 import crypto from 'crypto';
 
+type WebhookEvent =
+  | 'consent.given'
+  | 'consent.revoked'
+  | 'consent.expiring'
+  | 'consent.completed'
+  | 'export.completed'
+  | 'export.failed'
+  | 'token.needs_reauth';
+
 interface WebhookPayload {
-  event: 'export.completed' | 'export.failed' | 'consent.revoked';
+  event: WebhookEvent;
   timestamp: string;
   data: Record<string, unknown>;
 }
@@ -365,7 +394,7 @@ class EmergeWebhookHandler {
 // Initialize clients
 const linkClient = new EmergeLinkClient({
   clientId: process.env.EMERGE_CLIENT_ID!,
-  clientSecret: process.env.EMERGE_CLIENT_SECRET!,
+  signingSecret: process.env.EMERGE_SIGNING_SECRET!,
   apiToken: process.env.EMERGE_API_TOKEN!,
   redirectUri: 'https://yourapp.com/emerge/callback'
 });
@@ -383,8 +412,82 @@ const searchHistory = await queryClient.getSearch({
 });
 
 // Fetch all with pagination
-const allBrowsing = await queryClient.fetchAll(
+const { data: allBrowsing, appliedIngestedEnd } = await queryClient.fetchAll(
   (params) => queryClient.getBrowsing(params),
   { uid: 'user_12345' }
 );
+
+// Delta sync - use appliedIngestedEnd for next sync
+const nextSyncStart = appliedIngestedEnd;
+```
+
+## Express.js Integration
+
+```typescript
+import express from 'express';
+
+const app = express();
+
+// Initialize clients
+const linkClient = new EmergeLinkClient({
+  clientId: process.env.EMERGE_CLIENT_ID!,
+  signingSecret: process.env.EMERGE_SIGNING_SECRET!,
+  apiToken: process.env.EMERGE_API_TOKEN!,
+  redirectUri: 'https://yourapp.com/emerge/callback'
+});
+
+const webhookHandler = new EmergeWebhookHandler(
+  process.env.EMERGE_WEBHOOK_SECRET!
+);
+
+// Create consent link
+app.get('/connect', (req, res) => {
+  const userId = req.session.userId;
+  const { url, state } = linkClient.createLinkUrl({ userId });
+
+  // Store state in session for verification
+  req.session.emergeState = state;
+
+  res.redirect(url);
+});
+
+// Handle callback
+app.get('/emerge/callback', async (req, res) => {
+  const params = linkClient.parseCallback(req.query as Record<string, string>);
+
+  // Verify state
+  const { valid } = linkClient.verifyState(params.state);
+  if (!valid) {
+    return res.status(400).send('Invalid state');
+  }
+
+  if (params.status === 'success' || params.status === 'reauthorized') {
+    res.redirect('/dashboard?connected=true');
+  } else {
+    res.redirect(`/error?code=${params.errorCode}`);
+  }
+});
+
+// Handle webhooks
+app.post('/webhooks/emerge', express.raw({ type: 'application/json' }), (req, res) => {
+  const signature = req.headers['x-emerge-signature'] as string;
+
+  try {
+    const payload = webhookHandler.parseWebhook(req.body, signature);
+
+    switch (payload.event) {
+      case 'export.completed':
+        console.log(`Data ready for user ${payload.data.uid}`);
+        break;
+      case 'consent.revoked':
+        console.log(`Consent revoked for user ${payload.data.uid}`);
+        break;
+      // Handle other events...
+    }
+
+    res.status(200).send('OK');
+  } catch (error) {
+    res.status(401).send('Invalid signature');
+  }
+});
 ```

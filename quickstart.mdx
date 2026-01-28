@@ -25,10 +25,13 @@ const response = await fetch('https://link.emergedata.ai/configs', {
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
+    config_name: 'default',
     company_name: 'Your Company',
     logo_url: 'https://yourcompany.com/logo.png',
     privacy_policy_url: 'https://yourcompany.com/privacy',
-    redirect_uris: ['https://yourcompany.com/callback']
+    webhook_url: 'https://yourcompany.com/webhooks/emerge',
+    flow_version: 'lm',
+    is_default: true
   })
 });
 ```
@@ -43,10 +46,13 @@ response = requests.post(
         'Content-Type': 'application/json'
     },
     json={
+        'config_name': 'default',
         'company_name': 'Your Company',
         'logo_url': 'https://yourcompany.com/logo.png',
         'privacy_policy_url': 'https://yourcompany.com/privacy',
-        'redirect_uris': ['https://yourcompany.com/callback']
+        'webhook_url': 'https://yourcompany.com/webhooks/emerge',
+        'flow_version': 'lm',
+        'is_default': True
     }
 )
 ```
@@ -64,40 +70,45 @@ import crypto from 'crypto';
 
 function createLinkUrl(params: {
   clientId: string;
-  clientSecret: string;
+  signingSecret: string;
   redirectUri: string;
   userId: string;
 }) {
-  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const timestamp = new Date().toISOString();
   const state = crypto.randomBytes(16).toString('hex');
 
-  const queryParams = new URLSearchParams({
+  // Build parameters object
+  const urlParams: Record<string, string> = {
     client_id: params.clientId,
     redirect_uri: params.redirectUri,
     state: state,
     timestamp: timestamp,
     uid: params.userId,
     flow_version: 'lm'
-  });
+  };
 
   // Sort parameters alphabetically for signature
-  const sortedParams = new URLSearchParams([...queryParams.entries()].sort());
-  const signatureBase = sortedParams.toString();
+  const sortedKeys = Object.keys(urlParams).sort();
+  const signatureBase = sortedKeys
+    .map(key => `${key}=${urlParams[key]}`)
+    .join('&');
 
   const signature = crypto
-    .createHmac('sha256', params.clientSecret)
+    .createHmac('sha256', params.signingSecret)
     .update(signatureBase)
     .digest('hex');
 
-  queryParams.append('signature', signature);
+  // Build final URL with URL-encoded parameters
+  const finalParams = new URLSearchParams(urlParams);
+  finalParams.append('signature', signature);
 
-  return `https://link.emergedata.ai/link?${queryParams.toString()}`;
+  return `https://link.emergedata.ai/link/start?${finalParams.toString()}`;
 }
 
 // Usage
 const linkUrl = createLinkUrl({
   clientId: 'your_client_id',
-  clientSecret: 'your_client_secret',
+  signingSecret: 'your_signing_secret',
   redirectUri: 'https://yourcompany.com/callback',
   userId: 'user_12345'
 });
@@ -106,17 +117,17 @@ const linkUrl = createLinkUrl({
 ```python Python
 import hmac
 import hashlib
-import time
+from datetime import datetime, timezone
 import secrets
 from urllib.parse import urlencode
 
 def create_link_url(
     client_id: str,
-    client_secret: str,
+    signing_secret: str,
     redirect_uri: str,
     user_id: str
 ) -> str:
-    timestamp = str(int(time.time()))
+    timestamp = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
     state = secrets.token_hex(16)
 
     params = {
@@ -130,22 +141,22 @@ def create_link_url(
 
     # Sort parameters alphabetically for signature
     sorted_params = sorted(params.items())
-    signature_base = urlencode(sorted_params)
+    signature_base = '&'.join(f'{k}={v}' for k, v in sorted_params)
 
     signature = hmac.new(
-        client_secret.encode(),
+        signing_secret.encode(),
         signature_base.encode(),
         hashlib.sha256
     ).hexdigest()
 
     params['signature'] = signature
 
-    return f"https://link.emergedata.ai/link?{urlencode(params)}"
+    return f"https://link.emergedata.ai/link/start?{urlencode(params)}"
 
 # Usage
 link_url = create_link_url(
     client_id='your_client_id',
-    client_secret='your_client_secret',
+    signing_secret='your_signing_secret',
     redirect_uri='https://yourcompany.com/callback',
     user_id='user_12345'
 )
@@ -263,6 +274,45 @@ print(search_history['data'])
 ```
 
 </CodeGroup>
+
+## Step 5: Connect AI tools (optional)
+
+Get AI-powered help while integrating by connecting these docs to your AI tools.
+
+<Tabs>
+  <Tab title="Cursor">
+    Add to `.cursor/mcp.json`:
+    ```json
+    {
+      "mcpServers": {
+        "Emerge": {
+          "url": "https://emerge.mintlify.dev/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Claude Code">
+    ```bash
+    claude mcp add emerge https://emerge.mintlify.dev/mcp
+    ```
+  </Tab>
+  <Tab title="VS Code">
+    Add to `.vscode/mcp.json`:
+    ```json
+    {
+      "servers": {
+        "Emerge": {
+          "type": "http",
+          "url": "https://emerge.mintlify.dev/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+Or see [AI Integration](/ai/overview) for more options.
 
 ## Next steps
 
