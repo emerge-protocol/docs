@@ -64,7 +64,6 @@
                 "company_name": "Acme Corp",
                 "logo_url": "https://acme.com/logo.png",
                 "privacy_policy_url": "https://acme.com/privacy",
-                "webhook_url": "https://acme.com/webhooks/emerge",
                 "is_default": true
               }
             }
