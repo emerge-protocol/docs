@@ -1,11 +1,11 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "name": "Emerge API",
-  "theme": "willow",
+  "theme": "maple",
   "colors": {
-    "primary": "#1E3A5F",
-    "light": "#2E5A8F",
-    "dark": "#1E3A5F"
+    "primary": "#e36c35",
+    "light": "#ff4f1a",
+    "dark": "#2e1205"
   },
   "favicon": "/favicon.ico",
   "logo": {
