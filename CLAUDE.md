@@ -15,7 +15,7 @@ Documentation for Emerge API - a privacy-first API for accessing consented user 
 - Preview URL: http://localhost:3000
 - Logo: emerge-logo.svg (300x80px, text-based with system-ui fonts, 58px bold, used for both light and dark modes)
 - Favicon: favicon.ico (MS Windows icon resource with 16x16 and 32x32 PNG icons)
-- Navbar: Primary CTA button links to Control Room (dashboard.emergedata.ai), support link in secondary navigation
+- Navbar: Primary CTA button links to Control Room (dashboard.emergedata.ai), support email link (account@emergedata.ai) in secondary navigation and global footer
 
 ## Content structure
 
@@ -27,12 +27,12 @@ Documentation for Emerge API - a privacy-first API for accessing consented user 
 
 ### Key files
 - `index.mdx` - Homepage with product overview and navigation
-- `quickstart.mdx` - 30-minute integration guide
+- `quickstart.mdx` - 30-minute integration guide with AI tool setup section (MCP integration for Cursor, Claude Code, VS Code)
 - `AGENTS.md` - AI-specific documentation guidelines (code examples, API patterns, terminology)
 - `CLAUDE.md` - This file - project memory for AI agents
 - `changelog.mdx` - Version history (current: v1.0.0)
-- `docs.json` - Navigation structure, Mintlify configuration, theme colors (maple theme with Emerge branding)
-- `openapi/emerge.json` - OpenAPI 3.1 spec for API reference
+- `docs.json` - Navigation structure, Mintlify configuration, theme colors (maple theme with Emerge branding), support email: account@emergedata.ai
+- `openapi/emerge.json` - OpenAPI 3.1 spec for API reference, contact email: account@emergedata.ai
 - `README.md` - Documentation development guide
 
 ## Writing standards
@@ -201,6 +201,7 @@ mint validate
 - Mintlify auto-generates MCP server at `/mcp` endpoint
 - AI tools can search and query documentation semantically
 - Configuration examples in `/ai/mcp-setup.mdx` for Claude, Cursor, VS Code, Claude Code
+- Quickstart guide includes AI tool setup section with MCP instructions for Cursor (.cursor/mcp.json), Claude Code (claude mcp add), and VS Code (.vscode/mcp.json)
 
 ### Contextual menu
 - Enabled via `docs.json` "contextual" section
