@@ -6,7 +6,7 @@
     "light": "#2E5A8F",
     "dark": "#1E3A5F"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "/favicon.ico",
   "logo": {
     "light": "/logo/emerge-logo.svg",
     "dark": "/logo/emerge-logo.svg"

@@ -69,13 +69,13 @@ Every endpoint must document:
 
 **Querying data:**
 - Sync vs async tradeoffs (30s timeout vs job-based polling)
-- Pagination with cursor parameter
-- Delta queries with ingested_after
+- Sync: Single uid, pagination with cursor, delta queries with ingested_begin/ingested_end
+- Async: Batch up to 25 users, date range with begin/end, results as Parquet file via S3 presigned URL
 
 **Webhooks:**
-- Event types: `consent.granted`, `export.completed`, `export.failed`
+- Event types: `consent.given`, `consent.revoked`, `consent.expiring`, `consent.completed`, `export.completed`, `export.failed`, `token.needs_reauth`
 - HMAC-SHA256 signature verification (X-Emerge-Signature header)
-- Payload includes status, uid, timestamps, record_counts
+- Payload includes event, timestamp, data object with uid, client_id, provider
 
 ## Content strategy
 - Document just enough for user success
@@ -105,7 +105,7 @@ description: Concise summary for SEO/navigation
 - `/essentials/` - Template content (code, images, markdown, navigation, etc.)
 - `/snippets/` - Reusable content snippets
 - `/images/` - Documentation images and diagrams
-- `/logo/` - Brand assets (light.svg, dark.svg)
+- `/logo/` - Brand assets (emerge-logo.svg)
 
 ## Build and development
 
@@ -159,13 +159,13 @@ mint validate
 | Ad Interactions | `/v1/sync/get_ads` | `/v1/ads` | Ad clicks and views |
 
 ### Link API endpoints
-- `POST /configs` - Create/update consent flow configuration
-- `GET /consent/status/{uid}` - Check if user has granted consent
-- `GET /export/status/{uid}` - Check data export status
+- `POST /configs` - Create/update consent flow configuration (supports config_name, webhook_url, flow_version, is_default)
+- `GET /consent/status/{uid}` - Returns array of consents with provider, scopes, valid_until, status, issued_at
+- `GET /export/status/{uid}` - Returns data_ready boolean, data_landed_at, export_status, export_completed_at
 
 ### Query API endpoints
-- Sync endpoints: 30s timeout, immediate response
-- Async endpoints: Job-based polling via `/v1/job/{task_id}`
+- Sync endpoints: 30s timeout, immediate JSON response, single uid parameter
+- Async endpoints: Job-based polling via `/v1/job/{task_id}`, users array (max 25), begin/end date range, Parquet file result
 - Job management: `GET /v1/jobs` lists all jobs
 
 ## Terminology
@@ -176,7 +176,11 @@ mint validate
 - "query" - Retrieving user data via API
 - "flow_version" - Consent flow variant (lm = Gmail flow)
 - "uid" or "partner_uid" - Partner's user identifier
-- "task_id" - Async query job identifier
+- "task_id" or "job_id" - Async query job identifier
+- "config_name" - Named configuration for consent flow (supports multiple configs per client)
+- "data_ready" - Boolean indicating if exported data is available for querying
+- "consents" - Array of provider-specific consent records with scopes and validity
+- "begin/end" - Date range parameters for async queries (replaced ingested_after/before)
 
 ## API domains
 - Link API: https://link.emergedata.ai
