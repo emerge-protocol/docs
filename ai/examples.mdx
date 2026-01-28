@@ -28,8 +28,7 @@ function createEmergeLink(userId: string): string {
     redirect_uri: 'https://yourapp.com/emerge/callback',
     state,
     timestamp,
-    uid: userId,
-    flow_version: 'lm'
+    uid: userId
   };
 
   const sortedKeys = Object.keys(params).sort();

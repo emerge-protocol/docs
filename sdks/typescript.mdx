@@ -35,7 +35,6 @@ interface CallbackParams {
   status: 'success' | 'reauthorized' | 'failure';
   state: string;
   uid: string;
-  flowVersion: string;
   errorCode?: string;
 }
 
@@ -67,8 +66,7 @@ class EmergeLinkClient {
       redirect_uri: this.config.redirectUri,
       state,
       timestamp,
-      uid: params.userId,
-      flow_version: 'lm'
+      uid: params.userId
     };
 
     if (params.locale) {
@@ -125,7 +123,6 @@ class EmergeLinkClient {
       status: query.status as CallbackParams['status'],
       state: query.state,
       uid: query.uid,
-      flowVersion: query.flow_version,
       errorCode: query.error_code
     };
   }

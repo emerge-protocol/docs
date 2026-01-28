@@ -50,7 +50,6 @@ class CallbackParams:
     status: str  # 'success', 'reauthorized', 'failure'
     state: str
     uid: str
-    flow_version: str
     error_code: Optional[str] = None
 
 
@@ -80,8 +79,7 @@ class EmergeLinkClient:
             'redirect_uri': self.config.redirect_uri,
             'state': state,
             'timestamp': timestamp,
-            'uid': user_id,
-            'flow_version': 'lm'
+            'uid': user_id
         }
 
         if locale:
@@ -123,7 +121,6 @@ class EmergeLinkClient:
             status=query.get('status', ''),
             state=query.get('state', ''),
             uid=query.get('uid', ''),
-            flow_version=query.get('flow_version', ''),
             error_code=query.get('error_code')
         )
 

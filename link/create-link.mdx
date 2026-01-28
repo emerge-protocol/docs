@@ -26,7 +26,7 @@ https://link.emergedata.ai/link/start?client_id=...&redirect_uri=...&state=...&t
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `uid` | string | - | Your user identifier (returned in callback) |
-| `flow_version` | string | `lm` | Flow type: `lm` for Gmail data |
+| `flow_config` | string | - | Named configuration for custom branding |
 | `locale` | string | Browser | UI language code (e.g., `en`, `de`, `fr`) |
 
 ## Complete implementation
@@ -53,8 +53,7 @@ function createLinkUrl(params: LinkParams): string {
     client_id: params.clientId,
     redirect_uri: params.redirectUri,
     state: state,
-    timestamp: timestamp,
-    flow_version: 'lm'
+    timestamp: timestamp
   };
 
   if (params.userId) {
@@ -103,8 +102,7 @@ function createLinkWithStateTracking(params: LinkParams): {
     client_id: params.clientId,
     redirect_uri: params.redirectUri,
     state: state,
-    timestamp: timestamp,
-    flow_version: 'lm'
+    timestamp: timestamp
   };
 
   if (params.userId) {
@@ -159,8 +157,7 @@ def create_link_url(params: LinkParams) -> str:
         'client_id': params.client_id,
         'redirect_uri': params.redirect_uri,
         'state': state,
-        'timestamp': timestamp,
-        'flow_version': 'lm'
+        'timestamp': timestamp
     }
 
     if params.user_id:
@@ -202,8 +199,7 @@ def create_link_with_state_tracking(params: LinkParams) -> tuple[str, str]:
         'client_id': params.client_id,
         'redirect_uri': params.redirect_uri,
         'state': state,
-        'timestamp': timestamp,
-        'flow_version': 'lm'
+        'timestamp': timestamp
     }
 
     if params.user_id:

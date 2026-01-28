@@ -46,7 +46,7 @@ Consent flow URLs are signed with HMAC-SHA256 to prevent tampering. The signatur
 | `state` | Yes | CSRF protection token |
 | `timestamp` | Yes | ISO 8601 timestamp (e.g., `2024-01-15T10:30:00.000Z`) |
 | `uid` | No | Your user identifier |
-| `flow_version` | No | Flow type (default: `lm` for Gmail) |
+| `flow_config` | No | Named configuration for custom branding |
 | `locale` | No | UI language (default: browser locale) |
 
 ### Example signature generation
@@ -78,8 +78,7 @@ const params = {
   redirect_uri: 'https://yourapp.com/callback',
   state: 'random_state_value',
   timestamp: new Date().toISOString(),
-  uid: 'user_12345',
-  flow_version: 'lm'
+  uid: 'user_12345'
 };
 
 const signature = signParams(params, 'your_signing_secret');
@@ -110,8 +109,7 @@ params = {
     'redirect_uri': 'https://yourapp.com/callback',
     'state': 'random_state_value',
     'timestamp': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
-    'uid': 'user_12345',
-    'flow_version': 'lm'
+    'uid': 'user_12345'
 }
 
 signature = sign_params(params, 'your_signing_secret')

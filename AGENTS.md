@@ -67,7 +67,7 @@ When answering questions about Emerge:
 - "consent" - User permission for data access
 - "export" - Data transfer from provider to Emerge
 - "query" - Retrieving user data via API
-- "flow_version" - Consent flow variant (lm = Gmail flow)
+- "flow_config" - Named configuration for custom branding
 - "uid" or "partner_uid" - Partner's user identifier
 - "task_id" - Async query job identifier
 - "signing_secret" - HMAC signing credential (not "client_secret")

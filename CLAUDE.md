@@ -10,7 +10,7 @@ Documentation for Emerge API - a privacy-first API for accessing consented user 
 - Theme: maple with Emerge brand colors (primary: #e36c35, light: #ff4f1a, dark: #2e1205)
 - Branding: Mintlify footer branding hidden (`branding.hide: true` in docs.json + CSS selector in style.css)
 - Custom styles: style.css - Logo sized to 32px height, Mintlify "Powered by" footer hidden via CSS
-- OpenAPI spec: openapi/emerge.json (v1.0.0)
+- OpenAPI spec: openapi/emerge.json (v1.0.0, event_id type: integer)
 - AI integration: MCP (Model Context Protocol) enabled
 - Local dev: `mint dev` (requires global CLI: `npm i -g mint`)
 - Preview URL: http://localhost:3000
@@ -29,10 +29,10 @@ Documentation for Emerge API - a privacy-first API for accessing consented user 
 
 ### Key files
 - `index.mdx` - Homepage with product overview and navigation
-- `quickstart.mdx` - 30-minute integration guide with upfront AI tool setup section (MCP integration for Cursor, Claude Code, VS Code) at the beginning before prerequisites
+- `quickstart.mdx` - Lightning-fast integration guide with upfront AI tool setup section (MCP integration for Cursor, Claude Code, VS Code) at the beginning before prerequisites
 - `AGENTS.md` - AI-specific documentation guidelines (code examples, API patterns, terminology)
 - `CLAUDE.md` - This file - project memory for AI agents
-- `changelog.mdx` - Version history (current: v1.0.0)
+- `changelog.mdx` - Version history (current: v0.0.10)
 - `docs.json` - Navigation structure, Mintlify configuration, theme colors (maple theme with Emerge branding), support email: account@emergedata.ai
 - `openapi/emerge.json` - OpenAPI 3.1 spec for API reference, contact email: account@emergedata.ai
 - `README.md` - Documentation development guide
@@ -67,12 +67,13 @@ Every endpoint must document:
 - HMAC signing with sorted parameters
 - State parameter for CSRF protection
 - Timestamp for link expiration (30 days)
-- flow_version parameter (default: 'lm')
+- Optional flow_config parameter for custom branding
 
 **Handling callbacks:**
 - State verification against stored values
 - Status values: success, reauthorized, failure
-- Error code handling
+- Error code handling (data_invalid, user_failed, uid_conflict, access_denied, invalid_scope, admin_policy_enforced)
+- Callback parameters: status, state, uid, error_code (no flow_version)
 
 **Querying data:**
 - Sync vs async tradeoffs (30s timeout vs job-based polling)
@@ -168,7 +169,7 @@ mint validate
 | Ad Interactions | `/v1/sync/get_ads` | `/v1/ads` | Ad clicks and views |
 
 ### Link API endpoints
-- `POST /configs` - Create/update consent flow configuration (supports config_name, webhook_url, flow_version, is_default)
+- `POST /configs` - Create/update consent flow configuration (supports config_name, webhook_url, is_default)
 - `GET /consent/status/{uid}` - Returns array of consents with provider, scopes, valid_until, status, issued_at
 - `GET /export/status/{uid}` - Returns data_ready boolean, data_landed_at, export_status, export_completed_at
 
@@ -183,7 +184,7 @@ mint validate
 - "consent" - User permission for data access
 - "export" - Data transfer from provider to Emerge
 - "query" - Retrieving user data via API
-- "flow_version" - Consent flow variant (lm = Gmail flow)
+- "flow_config" - Named configuration for custom branding
 - "uid" or "partner_uid" - Partner's user identifier
 - "task_id" or "job_id" - Async query job identifier
 - "config_name" - Named configuration for consent flow (supports multiple configs per client)
@@ -195,8 +196,8 @@ mint validate
 - Link API: https://link.emergedata.ai
 - Query API: https://query.emergedata.ai
 - Dashboard: https://dashboard.emergedata.ai
-- MCP Server: https://docs.emergedata.ai/mcp (AI tool integration)
-- Docs site: https://docs.emergedata.ai (or custom domain if configured)
+- MCP Server: https://docs.emergedata.ai/mcp (AI tool integration - updated from emerge.mintlify.dev)
+- Docs site: https://docs.emergedata.ai (production URL)
 
 ## AI-native features
 

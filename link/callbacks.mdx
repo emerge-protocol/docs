@@ -12,7 +12,6 @@ After a user completes (or exits) the consent flow, they're redirected to your `
 | `status` | Yes | `success`, `reauthorized`, or `failure` |
 | `state` | Yes | The state value you provided in the link |
 | `uid` | Yes | The user identifier you provided (or empty string) |
-| `flow_version` | Yes | The flow version used |
 | `error_code` | Only on failure | Error code explaining the failure |
 
 ## Status values
@@ -22,7 +21,7 @@ After a user completes (or exits) the consent flow, they're redirected to your `
 First-time consent granted. This user has connected their data for the first time with your application.
 
 ```
-https://yourapp.com/callback?status=success&state=abc123&uid=user_12345&flow_version=lm
+https://yourapp.com/callback?status=success&state=abc123&uid=user_12345
 ```
 
 ### `reauthorized`
@@ -32,7 +31,7 @@ User re-linked an existing consent. This happens when:
 - User re-authenticates after token expiration
 
 ```
-https://yourapp.com/callback?status=reauthorized&state=abc123&uid=user_12345&flow_version=lm
+https://yourapp.com/callback?status=reauthorized&state=abc123&uid=user_12345
 ```
 
 ### `failure`
@@ -40,7 +39,7 @@ https://yourapp.com/callback?status=reauthorized&state=abc123&uid=user_12345&flo
 User cancelled or an error occurred during the flow.
 
 ```
-https://yourapp.com/callback?status=failure&state=abc123&uid=user_12345&flow_version=lm&error_code=user_failed
+https://yourapp.com/callback?status=failure&state=abc123&uid=user_12345&error_code=user_failed
 ```
 
 ## Error codes
@@ -64,7 +63,7 @@ import express from 'express';
 const app = express();
 
 app.get('/emerge/callback', async (req, res) => {
-  const { status, state, uid, flow_version, error_code } = req.query;
+  const { status, state, uid, error_code } = req.query;
 
   // 1. Verify state matches (CSRF protection)
   const expectedState = req.session.emergeState;
@@ -81,8 +80,7 @@ app.get('/emerge/callback', async (req, res) => {
     case 'success':
       // First-time consent - data export will start automatically
       await saveUserConsent(uid as string, {
-        consentedAt: new Date(),
-        flowVersion: flow_version as string
+        consentedAt: new Date()
       });
 
       // Redirect to success page
@@ -131,7 +129,6 @@ async def emerge_callback(
     status: str,
     state: str,
     uid: str,
-    flow_version: str,
     error_code: str = None
 ):
     # 1. Verify state matches (CSRF protection)
@@ -146,8 +143,7 @@ async def emerge_callback(
     if status == 'success':
         # First-time consent - data export will start automatically
         await save_user_consent(uid, {
-            'consented_at': datetime.utcnow(),
-            'flow_version': flow_version
+            'consented_at': datetime.utcnow()
         })
 
         return RedirectResponse('/dashboard?connected=true')

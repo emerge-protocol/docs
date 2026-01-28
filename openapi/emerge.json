@@ -65,7 +65,6 @@
                 "logo_url": "https://acme.com/logo.png",
                 "privacy_policy_url": "https://acme.com/privacy",
                 "webhook_url": "https://acme.com/webhooks/emerge",
-                "flow_version": "lm",
                 "is_default": true
               }
             }
@@ -743,14 +742,14 @@
                 "example": {
                   "entries": [
                     {
-                      "event_id": "evt_abc123",
+                      "event_id": 12345678,
                       "query": "best restaurants nearby",
                       "timestamp": "2024-01-15T10:30:00Z",
                       "ingested_at": "2024-01-15T10:31:00Z",
                       "brands": ["Google"]
                     },
                     {
-                      "event_id": "evt_def456",
+                      "event_id": 12345679,
                       "query": "weather forecast",
                       "timestamp": "2024-01-15T09:15:00Z",
                       "ingested_at": "2024-01-15T09:16:00Z",
@@ -849,7 +848,7 @@
                 "example": {
                   "entries": [
                     {
-                      "event_id": "evt_abc123",
+                      "event_id": 12345678,
                       "url": "https://example.com/article",
                       "title": "Example Article",
                       "timestamp": "2024-01-15T10:30:00Z",
@@ -949,7 +948,7 @@
                 "example": {
                   "entries": [
                     {
-                      "event_id": "evt_abc123",
+                      "event_id": 12345678,
                       "video_id": "dQw4w9WgXcQ",
                       "title": "Example Video",
                       "channel": "Example Channel",
@@ -1050,7 +1049,7 @@
                 "example": {
                   "entries": [
                     {
-                      "event_id": "evt_abc123",
+                      "event_id": 12345678,
                       "advertiser": "Example Brand",
                       "ad_type": "display",
                       "timestamp": "2024-01-15T10:30:00Z",
@@ -1120,12 +1119,6 @@
             "format": "uri",
             "description": "URL to receive webhook events",
             "example": "https://acme.com/webhooks/emerge"
-          },
-          "flow_version": {
-            "type": "string",
-            "description": "Consent flow version (default: 'lm' for Gmail flow)",
-            "default": "lm",
-            "example": "lm"
           },
           "is_default": {
             "type": "boolean",
@@ -1334,7 +1327,7 @@
         "type": "object",
         "properties": {
           "event_id": {
-            "type": "string",
+            "type": "integer",
             "description": "Unique identifier for this event"
           },
           "timestamp": {
