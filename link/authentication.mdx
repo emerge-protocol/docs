@@ -1,0 +1,162 @@
+---
+title: "Authentication"
+description: "API credentials and HMAC signing for Emerge Link"
+---
+
+Emerge uses two authentication mechanisms:
+
+1. **API Token** - Bearer token for API calls
+2. **HMAC Signature** - Signed URLs for the consent flow
+
+## API Token
+
+Use your API token for server-to-server API calls. Include it in the `Authorization` header:
+
+```bash
+curl -X GET 'https://link.emergedata.ai/consent/status/user_123' \
+  -H 'Authorization: Bearer your_api_token'
+```
+
+<Warning>
+Never expose your API token in client-side code. All API calls should be made from your backend.
+</Warning>
+
+## HMAC Signing
+
+Consent flow URLs are signed with HMAC-SHA256 to prevent tampering. The signature validates that:
+
+- The URL parameters haven't been modified
+- The request originated from your application
+- The link hasn't expired (30-day validity)
+
+### Signature algorithm
+
+1. Collect all URL parameters (except `signature`)
+2. Sort parameters alphabetically by key
+3. URL-encode and concatenate as `key=value&key=value`
+4. Generate HMAC-SHA256 using your client secret
+5. Append signature as hex string
+
+### Parameters to sign
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `client_id` | Yes | Your client identifier |
+| `redirect_uri` | Yes | Callback URL (must be registered) |
+| `state` | Yes | CSRF protection token |
+| `timestamp` | Yes | Unix timestamp (seconds) |
+| `uid` | No | Your user identifier |
+| `flow_version` | No | Flow type (default: `lm` for Gmail) |
+| `locale` | No | UI language (default: browser locale) |
+
+### Example signature generation
+
+<CodeGroup>
+
+```typescript TypeScript
+import crypto from 'crypto';
+
+function signParams(params: Record<string, string>, secret: string): string {
+  // Sort parameters alphabetically
+  const sortedKeys = Object.keys(params).sort();
+  const sortedParams = sortedKeys
+    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
+    .join('&');
+
+  // Generate HMAC-SHA256
+  return crypto
+    .createHmac('sha256', secret)
+    .update(sortedParams)
+    .digest('hex');
+}
+
+// Usage
+const params = {
+  client_id: 'your_client_id',
+  redirect_uri: 'https://yourapp.com/callback',
+  state: 'random_state_value',
+  timestamp: Math.floor(Date.now() / 1000).toString(),
+  uid: 'user_12345',
+  flow_version: 'lm'
+};
+
+const signature = signParams(params, 'your_client_secret');
+```
+
+```python Python
+import hmac
+import hashlib
+from urllib.parse import quote
+
+def sign_params(params: dict, secret: str) -> str:
+    # Sort parameters alphabetically
+    sorted_items = sorted(params.items())
+    sorted_params = '&'.join(
+        f'{quote(str(k), safe="")}={quote(str(v), safe="")}'
+        for k, v in sorted_items
+    )
+
+    # Generate HMAC-SHA256
+    return hmac.new(
+        secret.encode(),
+        sorted_params.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+# Usage
+params = {
+    'client_id': 'your_client_id',
+    'redirect_uri': 'https://yourapp.com/callback',
+    'state': 'random_state_value',
+    'timestamp': str(int(time.time())),
+    'uid': 'user_12345',
+    'flow_version': 'lm'
+}
+
+signature = sign_params(params, 'your_client_secret')
+```
+
+</CodeGroup>
+
+## Credential management
+
+### Obtaining credentials
+
+1. Sign in to the [Control Room](https://dashboard.emergedata.ai)
+2. Navigate to **Settings** → **API Keys**
+3. Generate or view your credentials
+
+You'll receive:
+- **Client ID** - Public identifier for your application
+- **Client Secret** - Private key for signing (keep secure)
+- **API Token** - Bearer token for API calls
+
+### Rotating credentials
+
+To rotate your credentials:
+
+1. Go to **Settings** → **API Keys** in the Control Room
+2. Click **Regenerate Keys**
+3. A one-time retrieval link is emailed to the admin
+4. The link expires after 60 minutes
+
+<Note>
+After regeneration, existing signed links remain valid for their 30-day period. Only new links need the new secret.
+</Note>
+
+## Security best practices
+
+<AccordionGroup>
+  <Accordion title="Store secrets securely">
+    Use environment variables or a secrets manager (AWS Secrets Manager, HashiCorp Vault). Never commit secrets to version control.
+  </Accordion>
+  <Accordion title="Validate state parameter">
+    Always verify the `state` parameter in callbacks matches what you sent. This prevents CSRF attacks.
+  </Accordion>
+  <Accordion title="Use HTTPS redirect URIs">
+    Only HTTPS redirect URIs are allowed in production. This ensures the callback is encrypted.
+  </Accordion>
+  <Accordion title="Implement token refresh">
+    API tokens don't expire, but rotate them periodically as a security practice.
+  </Accordion>
+</AccordionGroup>

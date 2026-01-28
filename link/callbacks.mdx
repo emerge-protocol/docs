@@ -1,0 +1,218 @@
+---
+title: "Callbacks"
+description: "Handle redirect callbacks from the consent flow"
+---
+
+After a user completes (or exits) the consent flow, they're redirected to your `redirect_uri` with query parameters indicating the result.
+
+## Callback parameters
+
+| Parameter | Always Present | Description |
+|-----------|---------------|-------------|
+| `status` | Yes | `success`, `reauthorized`, or `failure` |
+| `state` | Yes | The state value you provided in the link |
+| `uid` | Yes | The user identifier you provided (or empty string) |
+| `flow_version` | Yes | The flow version used |
+| `error_code` | Only on failure | Error code explaining the failure |
+
+## Status values
+
+### `success`
+
+First-time consent granted. This user has connected their data for the first time with your application.
+
+```
+https://yourapp.com/callback?status=success&state=abc123&uid=user_12345&flow_version=lm
+```
+
+### `reauthorized`
+
+User re-linked an existing consent. This happens when:
+- User clicks the link again after previously consenting
+- User re-authenticates after token expiration
+
+```
+https://yourapp.com/callback?status=reauthorized&state=abc123&uid=user_12345&flow_version=lm
+```
+
+### `failure`
+
+User cancelled or an error occurred during the flow.
+
+```
+https://yourapp.com/callback?status=failure&state=abc123&uid=user_12345&flow_version=lm&error_code=user_failed
+```
+
+## Error codes
+
+| Error Code | Description | Suggested Action |
+|------------|-------------|------------------|
+| `user_failed` | User cancelled or denied consent | Show retry option |
+| `data_invalid` | Insufficient data in user's account | Explain data requirements |
+| `access_denied` | User denied OAuth permissions | Explain why permissions are needed |
+| `invalid_scope` | Required scopes not available | Contact support |
+| `admin_policy_enforced` | Organization policy blocks access | User needs admin approval |
+
+## Handling callbacks
+
+<CodeGroup>
+
+```typescript TypeScript
+import express from 'express';
+
+const app = express();
+
+app.get('/emerge/callback', async (req, res) => {
+  const { status, state, uid, flow_version, error_code } = req.query;
+
+  // 1. Verify state matches (CSRF protection)
+  const expectedState = req.session.emergeState;
+  if (state !== expectedState) {
+    console.error('State mismatch - possible CSRF attack');
+    return res.status(400).redirect('/error?reason=invalid_state');
+  }
+
+  // Clear stored state
+  delete req.session.emergeState;
+
+  // 2. Handle based on status
+  switch (status) {
+    case 'success':
+      // First-time consent - data export will start automatically
+      await saveUserConsent(uid as string, {
+        consentedAt: new Date(),
+        flowVersion: flow_version as string
+      });
+
+      // Redirect to success page
+      return res.redirect('/dashboard?connected=true');
+
+    case 'reauthorized':
+      // Existing consent refreshed
+      await updateUserConsent(uid as string, {
+        reauthorizedAt: new Date()
+      });
+
+      return res.redirect('/dashboard?reconnected=true');
+
+    case 'failure':
+      // Handle specific error codes
+      const errorMessage = getErrorMessage(error_code as string);
+
+      return res.redirect(`/connect?error=${encodeURIComponent(errorMessage)}`);
+
+    default:
+      return res.status(400).redirect('/error');
+  }
+});
+
+function getErrorMessage(errorCode: string): string {
+  const messages: Record<string, string> = {
+    'user_failed': 'You cancelled the connection. Click below to try again.',
+    'data_invalid': 'Your account doesn\'t have enough data history yet.',
+    'access_denied': 'Permission was denied. We need access to provide this feature.',
+    'admin_policy_enforced': 'Your organization\'s policy prevents this connection.'
+  };
+
+  return messages[errorCode] || 'Something went wrong. Please try again.';
+}
+```
+
+```python Python
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import RedirectResponse
+
+app = FastAPI()
+
+@app.get('/emerge/callback')
+async def emerge_callback(
+    request: Request,
+    status: str,
+    state: str,
+    uid: str,
+    flow_version: str,
+    error_code: str = None
+):
+    # 1. Verify state matches (CSRF protection)
+    expected_state = request.session.get('emerge_state')
+    if state != expected_state:
+        raise HTTPException(status_code=400, detail='Invalid state')
+
+    # Clear stored state
+    del request.session['emerge_state']
+
+    # 2. Handle based on status
+    if status == 'success':
+        # First-time consent - data export will start automatically
+        await save_user_consent(uid, {
+            'consented_at': datetime.utcnow(),
+            'flow_version': flow_version
+        })
+
+        return RedirectResponse('/dashboard?connected=true')
+
+    elif status == 'reauthorized':
+        # Existing consent refreshed
+        await update_user_consent(uid, {
+            'reauthorized_at': datetime.utcnow()
+        })
+
+        return RedirectResponse('/dashboard?reconnected=true')
+
+    elif status == 'failure':
+        error_message = get_error_message(error_code)
+        return RedirectResponse(f'/connect?error={error_message}')
+
+    else:
+        return RedirectResponse('/error')
+
+
+def get_error_message(error_code: str) -> str:
+    messages = {
+        'user_failed': 'You cancelled the connection.',
+        'data_invalid': 'Your account doesn\'t have enough data history.',
+        'access_denied': 'Permission was denied.',
+        'admin_policy_enforced': 'Your organization\'s policy prevents this.'
+    }
+    return messages.get(error_code, 'Something went wrong.')
+```
+
+</CodeGroup>
+
+## State verification
+
+<Warning>
+Always verify the `state` parameter matches what you stored before the redirect. This prevents CSRF attacks where an attacker tricks a user into linking their account to the attacker's data.
+</Warning>
+
+### Recommended state storage
+
+| Storage | Pros | Cons |
+|---------|------|------|
+| Session | Simple, automatic cleanup | Requires session middleware |
+| Redis | Distributed, TTL support | Additional infrastructure |
+| Database | Persistent, auditable | More complex queries |
+| Signed cookie | Stateless | Size limitations |
+
+## What happens after success
+
+When you receive `success` or `reauthorized`:
+
+1. **Data export starts automatically** - Emerge begins exporting the user's data from their provider
+2. **Export takes 1-15 minutes** - Depending on data volume
+3. **Webhook notification** - You receive a webhook when data is ready to query
+4. **Query available** - Use the Query API to retrieve the user's data
+
+<Note>
+You can poll the export status endpoint if you prefer not to use webhooks. See [Webhooks](/link/webhooks) for the recommended approach.
+</Note>
+
+## Completed session handling
+
+If a user clicks a consent link after they've already completed consent:
+
+- They see a brief "already connected" message
+- They're redirected to your wallet page (not back to your redirect_uri)
+- No new callback is triggered
+
+This prevents confusion from re-processing completed flows.

@@ -1,0 +1,101 @@
+---
+title: "Contextual Menu"
+description: "One-click AI integrations on every documentation page"
+---
+
+Every page in these docs includes a contextual menu with quick actions for AI tools. Look for the menu icon in the top-right corner of any page.
+
+## Available options
+
+| Option | Description |
+|--------|-------------|
+| **Copy** | Copy page content as Markdown |
+| **View** | View page source |
+| **ChatGPT** | Open in ChatGPT with page context |
+| **Claude** | Open in Claude with page context |
+| **Perplexity** | Search Perplexity with page context |
+| **MCP** | Copy MCP server URL |
+| **Cursor** | Copy Cursor MCP config |
+| **VS Code** | Copy VS Code MCP config |
+
+## Using the menu
+
+### Copy as Markdown
+
+Click **Copy** to copy the page content as formatted Markdown. Paste directly into:
+- AI chat interfaces (Claude, ChatGPT, etc.)
+- Your own documentation
+- Issue descriptions
+- Slack/Discord messages
+
+### Open in AI tools
+
+Click **ChatGPT** or **Claude** to open a new conversation with the page content pre-loaded. This is useful for:
+- Asking follow-up questions about the page
+- Generating code based on the documentation
+- Getting explanations of complex concepts
+
+### MCP configurations
+
+Click **Cursor** or **VS Code** to copy the MCP configuration snippet for that tool. Paste into your configuration file to enable doc search.
+
+**Cursor config:**
+```json
+{
+  "mcpServers": {
+    "Emerge": {
+      "url": "https://emerge.mintlify.dev/mcp"
+    }
+  }
+}
+```
+
+**VS Code config:**
+```json
+{
+  "servers": {
+    "Emerge": {
+      "type": "http",
+      "url": "https://emerge.mintlify.dev/mcp"
+    }
+  }
+}
+```
+
+## Workflow examples
+
+### Getting help with a specific topic
+
+1. Navigate to the relevant page (e.g., [Webhooks](/link/webhooks))
+2. Click the contextual menu
+3. Select **Claude** or **ChatGPT**
+4. Ask your question with full context
+
+### Adding MCP to your IDE
+
+1. Open any page
+2. Click the contextual menu
+3. Select **Cursor** or **VS Code**
+4. Paste the config into your project
+5. Restart your IDE
+
+### Sharing documentation
+
+1. Find the page you want to share
+2. Click **Copy** to get Markdown
+3. Paste into your communication channel
+4. Team members get formatted content
+
+## Tips
+
+<AccordionGroup>
+  <Accordion title="Use MCP for repeated questions">
+    If you ask documentation questions regularly, set up the MCP connection once and your AI tool will always have access.
+  </Accordion>
+  <Accordion title="Copy for complex prompts">
+    For prompts that need specific documentation context, use Copy to include exact content rather than relying on AI search.
+  </Accordion>
+  <Accordion title="Combine with your code">
+    Copy documentation, paste into your AI tool, then share your code. The AI has both the official docs and your implementation.
+  </Accordion>
+</AccordionGroup>

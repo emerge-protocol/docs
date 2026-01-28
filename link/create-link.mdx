@@ -1,0 +1,307 @@
+---
+title: "Create Signed Links"
+description: "Generate HMAC-signed URLs for the consent flow"
+---
+
+Generate signed URLs server-side to initiate the consent flow. Each link is unique to a user and includes an HMAC signature for security.
+
+## URL structure
+
+```
+https://link.emergedata.ai/link?client_id=...&redirect_uri=...&state=...&timestamp=...&signature=...
+```
+
+## Required parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `client_id` | string | Your client identifier from the Control Room |
+| `redirect_uri` | string | URL to redirect after consent (must be registered) |
+| `state` | string | Random string for CSRF protection (you verify this in callback) |
+| `timestamp` | string | Unix timestamp in seconds |
+| `signature` | string | HMAC-SHA256 signature of sorted parameters |
+
+## Optional parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `uid` | string | - | Your user identifier (returned in callback) |
+| `flow_version` | string | `lm` | Flow type: `lm` for Gmail data |
+| `locale` | string | Browser | UI language code (e.g., `en`, `de`, `fr`) |
+
+## Complete implementation
+
+<CodeGroup>
+
+```typescript TypeScript
+import crypto from 'crypto';
+
+interface LinkParams {
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+  userId?: string;
+  locale?: string;
+}
+
+function createLinkUrl(params: LinkParams): string {
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const state = crypto.randomBytes(16).toString('hex');
+
+  // Build parameters object
+  const urlParams: Record<string, string> = {
+    client_id: params.clientId,
+    redirect_uri: params.redirectUri,
+    state: state,
+    timestamp: timestamp,
+    flow_version: 'lm'
+  };
+
+  if (params.userId) {
+    urlParams.uid = params.userId;
+  }
+  if (params.locale) {
+    urlParams.locale = params.locale;
+  }
+
+  // Sort and create signature base
+  const sortedKeys = Object.keys(urlParams).sort();
+  const signatureBase = sortedKeys
+    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(urlParams[key])}`)
+    .join('&');
+
+  // Generate signature
+  const signature = crypto
+    .createHmac('sha256', params.clientSecret)
+    .update(signatureBase)
+    .digest('hex');
+
+  // Build final URL
+  const finalParams = new URLSearchParams(urlParams);
+  finalParams.append('signature', signature);
+
+  return `https://link.emergedata.ai/link?${finalParams.toString()}`;
+}
+
+// Store state for verification in callback
+const stateStore = new Map<string, { userId: string; createdAt: number }>();
+
+function createLinkWithStateTracking(params: LinkParams): {
+  url: string;
+  state: string;
+} {
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const state = crypto.randomBytes(16).toString('hex');
+
+  // Store state for later verification
+  stateStore.set(state, {
+    userId: params.userId || '',
+    createdAt: Date.now()
+  });
+
+  const urlParams: Record<string, string> = {
+    client_id: params.clientId,
+    redirect_uri: params.redirectUri,
+    state: state,
+    timestamp: timestamp,
+    flow_version: 'lm'
+  };
+
+  if (params.userId) {
+    urlParams.uid = params.userId;
+  }
+
+  const sortedKeys = Object.keys(urlParams).sort();
+  const signatureBase = sortedKeys
+    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(urlParams[key])}`)
+    .join('&');
+
+  const signature = crypto
+    .createHmac('sha256', params.clientSecret)
+    .update(signatureBase)
+    .digest('hex');
+
+  const finalParams = new URLSearchParams(urlParams);
+  finalParams.append('signature', signature);
+
+  return {
+    url: `https://link.emergedata.ai/link?${finalParams.toString()}`,
+    state: state
+  };
+}
+```
+
+```python Python
+import hmac
+import hashlib
+import time
+import secrets
+from urllib.parse import urlencode, quote
+from dataclasses import dataclass
+from typing import Optional
+
+@dataclass
+class LinkParams:
+    client_id: str
+    client_secret: str
+    redirect_uri: str
+    user_id: Optional[str] = None
+    locale: Optional[str] = None
+
+
+def create_link_url(params: LinkParams) -> str:
+    timestamp = str(int(time.time()))
+    state = secrets.token_hex(16)
+
+    # Build parameters dict
+    url_params = {
+        'client_id': params.client_id,
+        'redirect_uri': params.redirect_uri,
+        'state': state,
+        'timestamp': timestamp,
+        'flow_version': 'lm'
+    }
+
+    if params.user_id:
+        url_params['uid'] = params.user_id
+    if params.locale:
+        url_params['locale'] = params.locale
+
+    # Sort and create signature base
+    sorted_items = sorted(url_params.items())
+    signature_base = '&'.join(
+        f'{quote(str(k), safe="")}={quote(str(v), safe="")}'
+        for k, v in sorted_items
+    )
+
+    # Generate signature
+    signature = hmac.new(
+        params.client_secret.encode(),
+        signature_base.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+    # Build final URL
+    url_params['signature'] = signature
+    return f'https://link.emergedata.ai/link?{urlencode(url_params)}'
+
+
+# With state tracking for verification
+state_store: dict[str, dict] = {}
+
+
+def create_link_with_state_tracking(params: LinkParams) -> tuple[str, str]:
+    timestamp = str(int(time.time()))
+    state = secrets.token_hex(16)
+
+    # Store state for later verification
+    state_store[state] = {
+        'user_id': params.user_id or '',
+        'created_at': time.time()
+    }
+
+    url_params = {
+        'client_id': params.client_id,
+        'redirect_uri': params.redirect_uri,
+        'state': state,
+        'timestamp': timestamp,
+        'flow_version': 'lm'
+    }
+
+    if params.user_id:
+        url_params['uid'] = params.user_id
+
+    sorted_items = sorted(url_params.items())
+    signature_base = '&'.join(
+        f'{quote(str(k), safe="")}={quote(str(v), safe="")}'
+        for k, v in sorted_items
+    )
+
+    signature = hmac.new(
+        params.client_secret.encode(),
+        signature_base.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+    url_params['signature'] = signature
+    url = f'https://link.emergedata.ai/link?{urlencode(url_params)}'
+
+    return url, state
+```
+
+</CodeGroup>
+
+## Usage examples
+
+### Basic link generation
+
+```typescript
+const url = createLinkUrl({
+  clientId: process.env.EMERGE_CLIENT_ID!,
+  clientSecret: process.env.EMERGE_CLIENT_SECRET!,
+  redirectUri: 'https://yourapp.com/emerge/callback',
+  userId: 'user_12345'
+});
+
+// Redirect user to this URL or display as a button
+console.log(url);
+```
+
+### Express.js endpoint
+
+```typescript
+import express from 'express';
+
+const app = express();
+
+app.get('/connect-data', (req, res) => {
+  const userId = req.session.userId;
+
+  const { url, state } = createLinkWithStateTracking({
+    clientId: process.env.EMERGE_CLIENT_ID!,
+    clientSecret: process.env.EMERGE_CLIENT_SECRET!,
+    redirectUri: 'https://yourapp.com/emerge/callback',
+    userId: userId
+  });
+
+  // Store state in session for verification
+  req.session.emergeState = state;
+
+  res.redirect(url);
+});
+```
+
+### FastAPI endpoint
+
+```python
+from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse
+
+app = FastAPI()
+
+@app.get('/connect-data')
+async def connect_data(request: Request):
+    user_id = request.session.get('user_id')
+
+    url, state = create_link_with_state_tracking(LinkParams(
+        client_id=os.environ['EMERGE_CLIENT_ID'],
+        client_secret=os.environ['EMERGE_CLIENT_SECRET'],
+        redirect_uri='https://yourapp.com/emerge/callback',
+        user_id=user_id
+    ))
+
+    # Store state in session for verification
+    request.session['emerge_state'] = state
+
+    return RedirectResponse(url)
+```
+
+## Link validity
+
+- Links are valid for **30 days** from the timestamp
+- The same link parameters generate the same session (idempotent)
+- Expired links show an error page to users
+
+<Note>
+Generate links on-demand rather than storing them. This ensures the timestamp is always fresh.
+</Note>

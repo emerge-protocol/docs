@@ -1,68 +1,148 @@
 {
   "$schema": "https://mintlify.com/docs.json",
+  "name": "Emerge API",
   "theme": "mint",
-  "name": "Mint Starter Kit",
   "colors": {
     "primary": "#16A34A",
     "light": "#07C983",
     "dark": "#15803D"
   },
   "favicon": "/favicon.svg",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "api": {
+    "playground": {
+      "display": "interactive"
+    }
+  },
+  "openapi": "openapi/emerge.json",
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
+  },
+  "tabs": [
+    {
+      "name": "Guides",
+      "url": "/"
+    },
+    {
+      "name": "Link API",
+      "url": "/link"
+    },
+    {
+      "name": "Query API",
+      "url": "/query"
+    },
+    {
+      "name": "AI Integration",
+      "url": "/ai"
+    }
+  ],
   "navigation": {
     "tabs": [
       {
         "tab": "Guides",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Getting Started",
             "pages": [
               "index",
-              "quickstart",
-              "development"
+              "quickstart"
             ]
           },
           {
-            "group": "Customization",
+            "group": "SDKs",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "sdks/typescript",
+              "sdks/python"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Resources",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "changelog"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "Link API",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Guides",
             "pages": [
-              "api-reference/introduction"
+              "link/overview",
+              "link/authentication",
+              "link/create-link",
+              "link/callbacks",
+              "link/webhooks"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Endpoints",
+            "openapi": "openapi/emerge.json",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "POST /configs",
+              "GET /consent/status/{uid}",
+              "GET /export/status/{uid}"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Query API",
+        "groups": [
+          {
+            "group": "Guides",
+            "pages": [
+              "query/overview",
+              "query/pagination"
+            ]
+          },
+          {
+            "group": "Async Endpoints",
+            "openapi": "openapi/emerge.json",
+            "pages": [
+              "GET /v1/search",
+              "GET /v1/browsing",
+              "GET /v1/youtube",
+              "GET /v1/ads",
+              "GET /v1/job/{task_id}",
+              "GET /v1/jobs"
+            ]
+          },
+          {
+            "group": "Sync Endpoints",
+            "openapi": "openapi/emerge.json",
+            "pages": [
+              "GET /v1/sync/get_search",
+              "GET /v1/sync/get_browsing",
+              "GET /v1/sync/get_youtube",
+              "GET /v1/sync/get_ads"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "AI Integration",
+        "groups": [
+          {
+            "group": "AI-Native Docs",
+            "pages": [
+              "ai/overview",
+              "ai/mcp-setup",
+              "ai/contextual-menu",
+              "ai/examples"
             ]
           }
         ]
@@ -71,52 +151,34 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
+          "anchor": "Control Room",
+          "href": "https://dashboard.emergedata.ai",
+          "icon": "gauge"
         },
         {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
+          "anchor": "Support",
+          "href": "mailto:support@emergedata.ai",
+          "icon": "envelope"
         }
       ]
     }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
   },
   "navbar": {
     "links": [
       {
         "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "href": "mailto:support@emergedata.ai"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "label": "Control Room",
+      "href": "https://dashboard.emergedata.ai"
     }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "linkedin": "https://linkedin.com/company/emergedata"
     }
   }
 }

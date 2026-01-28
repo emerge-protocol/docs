@@ -1,0 +1,315 @@
+---
+title: "Webhooks"
+description: "Receive notifications when user data is ready"
+---
+
+Webhooks notify your application when user data is ready to query. This is more efficient than polling the export status endpoint.
+
+## Webhook events
+
+| Event | Description |
+|-------|-------------|
+| `export.completed` | Data export finished, ready to query |
+| `export.failed` | Export failed (usually insufficient data) |
+| `consent.revoked` | User revoked consent |
+
+## Webhook payload
+
+All webhooks follow this structure:
+
+```json
+{
+  "event": "export.completed",
+  "timestamp": "2024-01-15T10:35:00Z",
+  "data": {
+    "uid": "user_12345",
+    "client_id": "your_client_id",
+    "provider": "google-gmail",
+    "data_types": ["search", "browsing", "youtube", "ads"]
+  },
+  "signature": "hmac_signature_here"
+}
+```
+
+## Event details
+
+### export.completed
+
+Sent when a user's data export is complete and ready to query.
+
+```json
+{
+  "event": "export.completed",
+  "timestamp": "2024-01-15T10:35:00Z",
+  "data": {
+    "uid": "user_12345",
+    "client_id": "your_client_id",
+    "provider": "google-gmail",
+    "data_types": ["search", "browsing", "youtube", "ads"],
+    "record_counts": {
+      "search": 1523,
+      "browsing": 8742,
+      "youtube": 412,
+      "ads": 89
+    }
+  }
+}
+```
+
+### export.failed
+
+Sent when an export fails, usually due to insufficient data.
+
+```json
+{
+  "event": "export.failed",
+  "timestamp": "2024-01-15T10:35:00Z",
+  "data": {
+    "uid": "user_12345",
+    "client_id": "your_client_id",
+    "provider": "google-gmail",
+    "reason": "insufficient_data",
+    "details": "Account has less than 10 emails or 3 months of history"
+  }
+}
+```
+
+### consent.revoked
+
+Sent when a user revokes their consent (e.g., via Google account settings).
+
+```json
+{
+  "event": "consent.revoked",
+  "timestamp": "2024-01-15T10:35:00Z",
+  "data": {
+    "uid": "user_12345",
+    "client_id": "your_client_id",
+    "provider": "google-gmail",
+    "revoked_at": "2024-01-15T10:34:00Z"
+  }
+}
+```
+
+## Configuring webhooks
+
+Configure your webhook endpoint in the Control Room:
+
+1. Go to **Settings** → **Webhooks**
+2. Enter your webhook URL (must be HTTPS)
+3. Select events to receive
+4. Save and test
+
+## Handling webhooks
+
+<CodeGroup>
+
+```typescript TypeScript
+import express from 'express';
+import crypto from 'crypto';
+
+const app = express();
+app.use(express.json());
+
+const WEBHOOK_SECRET = process.env.EMERGE_WEBHOOK_SECRET!;
+
+app.post('/webhooks/emerge', async (req, res) => {
+  // 1. Verify signature
+  const signature = req.headers['x-emerge-signature'] as string;
+  const payload = JSON.stringify(req.body);
+
+  const expectedSignature = crypto
+    .createHmac('sha256', WEBHOOK_SECRET)
+    .update(payload)
+    .digest('hex');
+
+  if (signature !== expectedSignature) {
+    console.error('Invalid webhook signature');
+    return res.status(401).send('Invalid signature');
+  }
+
+  // 2. Handle event
+  const { event, data } = req.body;
+
+  switch (event) {
+    case 'export.completed':
+      await handleExportCompleted(data);
+      break;
+
+    case 'export.failed':
+      await handleExportFailed(data);
+      break;
+
+    case 'consent.revoked':
+      await handleConsentRevoked(data);
+      break;
+
+    default:
+      console.log(`Unknown event: ${event}`);
+  }
+
+  // 3. Acknowledge receipt
+  res.status(200).send('OK');
+});
+
+async function handleExportCompleted(data: {
+  uid: string;
+  data_types: string[];
+  record_counts: Record<string, number>;
+}) {
+  console.log(`Data ready for user ${data.uid}`);
+
+  // Update user record
+  await db.users.update({
+    where: { id: data.uid },
+    data: {
+      dataReady: true,
+      dataTypes: data.data_types,
+      lastExportAt: new Date()
+    }
+  });
+
+  // Trigger data processing
+  await processUserData(data.uid);
+}
+
+async function handleExportFailed(data: {
+  uid: string;
+  reason: string;
+}) {
+  console.log(`Export failed for user ${data.uid}: ${data.reason}`);
+
+  // Notify user
+  await sendEmail(data.uid, 'export_failed', {
+    reason: data.reason
+  });
+}
+
+async function handleConsentRevoked(data: {
+  uid: string;
+}) {
+  console.log(`Consent revoked for user ${data.uid}`);
+
+  // Delete user data per GDPR requirements
+  await deleteUserData(data.uid);
+}
+```
+
+```python Python
+from fastapi import FastAPI, Request, HTTPException
+import hmac
+import hashlib
+import json
+
+app = FastAPI()
+
+WEBHOOK_SECRET = os.environ['EMERGE_WEBHOOK_SECRET']
+
+@app.post('/webhooks/emerge')
+async def emerge_webhook(request: Request):
+    # 1. Verify signature
+    signature = request.headers.get('x-emerge-signature')
+    payload = await request.body()
+
+    expected_signature = hmac.new(
+        WEBHOOK_SECRET.encode(),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+
+    if signature != expected_signature:
+        raise HTTPException(status_code=401, detail='Invalid signature')
+
+    # 2. Handle event
+    body = json.loads(payload)
+    event = body['event']
+    data = body['data']
+
+    if event == 'export.completed':
+        await handle_export_completed(data)
+    elif event == 'export.failed':
+        await handle_export_failed(data)
+    elif event == 'consent.revoked':
+        await handle_consent_revoked(data)
+    else:
+        print(f'Unknown event: {event}')
+
+    # 3. Acknowledge receipt
+    return {'status': 'ok'}
+
+
+async def handle_export_completed(data: dict):
+    uid = data['uid']
+    print(f'Data ready for user {uid}')
+
+    # Update user record
+    await db.users.update(
+        uid,
+        data_ready=True,
+        data_types=data['data_types'],
+        last_export_at=datetime.utcnow()
+    )
+
+    # Trigger data processing
+    await process_user_data(uid)
+
+
+async def handle_export_failed(data: dict):
+    uid = data['uid']
+    reason = data['reason']
+    print(f'Export failed for user {uid}: {reason}')
+
+    # Notify user
+    await send_email(uid, 'export_failed', reason=reason)
+
+
+async def handle_consent_revoked(data: dict):
+    uid = data['uid']
+    print(f'Consent revoked for user {uid}')
+
+    # Delete user data per GDPR requirements
+    await delete_user_data(uid)
+```
+
+</CodeGroup>
+
+## Signature verification
+
+<Warning>
+Always verify the webhook signature before processing. This ensures the webhook came from Emerge and wasn't forged.
+</Warning>
+
+The signature is an HMAC-SHA256 hash of the raw request body using your webhook secret:
+
+```typescript
+const signature = crypto
+  .createHmac('sha256', WEBHOOK_SECRET)
+  .update(rawBody)
+  .digest('hex');
+```
+
+## Best practices
+
+<AccordionGroup>
+  <Accordion title="Respond quickly">
+    Return a 200 response within 5 seconds. Process webhooks asynchronously by queueing them.
+  </Accordion>
+  <Accordion title="Handle duplicates">
+    Webhooks may be delivered multiple times. Use the `timestamp` and `uid` to deduplicate.
+  </Accordion>
+  <Accordion title="Implement retries">
+    If your endpoint returns a non-2xx status, Emerge retries with exponential backoff (up to 3 attempts).
+  </Accordion>
+  <Accordion title="Log all webhooks">
+    Store webhook payloads for debugging and audit purposes.
+  </Accordion>
+</AccordionGroup>
+
+## Testing webhooks
+
+Use the Control Room to send test webhooks:
+
+1. Go to **Settings** → **Webhooks**
+2. Click **Send Test**
+3. Select event type
+4. Verify your endpoint receives and processes the test event

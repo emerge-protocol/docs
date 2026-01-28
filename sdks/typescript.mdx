@@ -1,0 +1,390 @@
+---
+title: "TypeScript SDK"
+description: "Complete TypeScript implementation for Emerge API"
+---
+
+Full TypeScript implementation for integrating with Emerge. Copy these utilities into your project or use as reference.
+
+## Installation
+
+No SDK package required. These examples use standard Node.js crypto and fetch APIs.
+
+```bash
+# For Node.js < 18, install node-fetch
+npm install node-fetch
+```
+
+## Link API Client
+
+```typescript
+import crypto from 'crypto';
+
+interface EmergeConfig {
+  clientId: string;
+  clientSecret: string;
+  apiToken: string;
+  redirectUri: string;
+}
+
+interface LinkParams {
+  userId: string;
+  locale?: string;
+}
+
+interface CallbackParams {
+  status: 'success' | 'reauthorized' | 'failure';
+  state: string;
+  uid: string;
+  flowVersion: string;
+  errorCode?: string;
+}
+
+class EmergeLinkClient {
+  private config: EmergeConfig;
+  private stateStore: Map<string, { userId: string; createdAt: number }>;
+
+  constructor(config: EmergeConfig) {
+    this.config = config;
+    this.stateStore = new Map();
+  }
+
+  /**
+   * Create a signed link URL for the consent flow
+   */
+  createLinkUrl(params: LinkParams): { url: string; state: string } {
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const state = crypto.randomBytes(16).toString('hex');
+
+    // Store state for verification
+    this.stateStore.set(state, {
+      userId: params.userId,
+      createdAt: Date.now()
+    });
+
+    const urlParams: Record<string, string> = {
+      client_id: this.config.clientId,
+      redirect_uri: this.config.redirectUri,
+      state,
+      timestamp,
+      uid: params.userId,
+      flow_version: 'lm'
+    };
+
+    if (params.locale) {
+      urlParams.locale = params.locale;
+    }
+
+    // Sort and create signature
+    const sortedKeys = Object.keys(urlParams).sort();
+    const signatureBase = sortedKeys
+      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(urlParams[key])}`)
+      .join('&');
+
+    const signature = crypto
+      .createHmac('sha256', this.config.clientSecret)
+      .update(signatureBase)
+      .digest('hex');
+
+    const finalParams = new URLSearchParams(urlParams);
+    finalParams.append('signature', signature);
+
+    return {
+      url: `https://link.emergedata.ai/link?${finalParams.toString()}`,
+      state
+    };
+  }
+
+  /**
+   * Verify callback state parameter
+   */
+  verifyState(state: string): { valid: boolean; userId?: string } {
+    const stored = this.stateStore.get(state);
+
+    if (!stored) {
+      return { valid: false };
+    }
+
+    // Clean up state after verification
+    this.stateStore.delete(state);
+
+    // Check expiration (1 hour)
+    if (Date.now() - stored.createdAt > 3600000) {
+      return { valid: false };
+    }
+
+    return { valid: true, userId: stored.userId };
+  }
+
+  /**
+   * Parse callback parameters
+   */
+  parseCallback(query: Record<string, string>): CallbackParams {
+    return {
+      status: query.status as CallbackParams['status'],
+      state: query.state,
+      uid: query.uid,
+      flowVersion: query.flow_version,
+      errorCode: query.error_code
+    };
+  }
+
+  /**
+   * Get consent status for a user
+   */
+  async getConsentStatus(uid: string): Promise<{
+    status: string;
+    consentedAt?: string;
+    provider?: string;
+  }> {
+    const response = await fetch(
+      `https://link.emergedata.ai/consent/status/${uid}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${this.config.apiToken}`
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Consent status failed: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Get export status for a user
+   */
+  async getExportStatus(uid: string): Promise<{
+    status: string;
+    startedAt?: string;
+    completedAt?: string;
+    dataTypes?: string[];
+  }> {
+    const response = await fetch(
+      `https://link.emergedata.ai/export/status/${uid}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${this.config.apiToken}`
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Export status failed: ${response.status}`);
+    }
+
+    return response.json();
+  }
+}
+```
+
+## Query API Client
+
+```typescript
+interface QueryParams {
+  uid: string;
+  ingestedAfter?: string;
+  ingestedBefore?: string;
+  cursor?: string;
+  limit?: number;
+}
+
+interface QueryResult<T> {
+  data: T[];
+  cursor?: string;
+  hasMore: boolean;
+}
+
+interface SearchEntry {
+  query: string;
+  timestamp: string;
+  source: string;
+}
+
+interface BrowsingEntry {
+  url: string;
+  title: string;
+  timestamp: string;
+}
+
+interface YoutubeEntry {
+  videoId: string;
+  title: string;
+  channel: string;
+  timestamp: string;
+}
+
+interface AdsEntry {
+  advertiser: string;
+  adType: string;
+  timestamp: string;
+}
+
+class EmergeQueryClient {
+  private apiToken: string;
+  private baseUrl = 'https://query.emergedata.ai/v1';
+
+  constructor(apiToken: string) {
+    this.apiToken = apiToken;
+  }
+
+  private async request<T>(endpoint: string, params: QueryParams): Promise<QueryResult<T>> {
+    const url = new URL(`${this.baseUrl}${endpoint}`);
+    url.searchParams.set('uid', params.uid);
+
+    if (params.ingestedAfter) {
+      url.searchParams.set('ingested_after', params.ingestedAfter);
+    }
+    if (params.ingestedBefore) {
+      url.searchParams.set('ingested_before', params.ingestedBefore);
+    }
+    if (params.cursor) {
+      url.searchParams.set('cursor', params.cursor);
+    }
+    if (params.limit) {
+      url.searchParams.set('limit', params.limit.toString());
+    }
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        'Authorization': `Bearer ${this.apiToken}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Query failed: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return {
+      data: result.data,
+      cursor: result.cursor,
+      hasMore: result.has_more
+    };
+  }
+
+  /**
+   * Get search history (sync)
+   */
+  async getSearch(params: QueryParams): Promise<QueryResult<SearchEntry>> {
+    return this.request<SearchEntry>('/sync/get_search', params);
+  }
+
+  /**
+   * Get browsing history (sync)
+   */
+  async getBrowsing(params: QueryParams): Promise<QueryResult<BrowsingEntry>> {
+    return this.request<BrowsingEntry>('/sync/get_browsing', params);
+  }
+
+  /**
+   * Get YouTube history (sync)
+   */
+  async getYoutube(params: QueryParams): Promise<QueryResult<YoutubeEntry>> {
+    return this.request<YoutubeEntry>('/sync/get_youtube', params);
+  }
+
+  /**
+   * Get ad interactions (sync)
+   */
+  async getAds(params: QueryParams): Promise<QueryResult<AdsEntry>> {
+    return this.request<AdsEntry>('/sync/get_ads', params);
+  }
+
+  /**
+   * Fetch all records with automatic pagination
+   */
+  async fetchAll<T>(
+    fetcher: (params: QueryParams) => Promise<QueryResult<T>>,
+    params: Omit<QueryParams, 'cursor'>
+  ): Promise<T[]> {
+    const allData: T[] = [];
+    let cursor: string | undefined;
+
+    do {
+      const result = await fetcher({ ...params, cursor });
+      allData.push(...result.data);
+      cursor = result.hasMore ? result.cursor : undefined;
+    } while (cursor);
+
+    return allData;
+  }
+}
+```
+
+## Webhook Handler
+
+```typescript
+import crypto from 'crypto';
+
+interface WebhookPayload {
+  event: 'export.completed' | 'export.failed' | 'consent.revoked';
+  timestamp: string;
+  data: Record<string, unknown>;
+}
+
+class EmergeWebhookHandler {
+  private secret: string;
+
+  constructor(webhookSecret: string) {
+    this.secret = webhookSecret;
+  }
+
+  /**
+   * Verify webhook signature
+   */
+  verifySignature(payload: Buffer | string, signature: string): boolean {
+    const expected = crypto
+      .createHmac('sha256', this.secret)
+      .update(payload)
+      .digest('hex');
+
+    return crypto.timingSafeEqual(
+      Buffer.from(signature),
+      Buffer.from(expected)
+    );
+  }
+
+  /**
+   * Parse and verify webhook
+   */
+  parseWebhook(rawBody: Buffer, signature: string): WebhookPayload {
+    if (!this.verifySignature(rawBody, signature)) {
+      throw new Error('Invalid webhook signature');
+    }
+
+    return JSON.parse(rawBody.toString());
+  }
+}
+```
+
+## Usage Example
+
+```typescript
+// Initialize clients
+const linkClient = new EmergeLinkClient({
+  clientId: process.env.EMERGE_CLIENT_ID!,
+  clientSecret: process.env.EMERGE_CLIENT_SECRET!,
+  apiToken: process.env.EMERGE_API_TOKEN!,
+  redirectUri: 'https://yourapp.com/emerge/callback'
+});
+
+const queryClient = new EmergeQueryClient(process.env.EMERGE_API_TOKEN!);
+
+// Create consent link
+const { url, state } = linkClient.createLinkUrl({
+  userId: 'user_12345'
+});
+
+// After consent, query data
+const searchHistory = await queryClient.getSearch({
+  uid: 'user_12345'
+});
+
+// Fetch all with pagination
+const allBrowsing = await queryClient.fetchAll(
+  (params) => queryClient.getBrowsing(params),
+  { uid: 'user_12345' }
+);
+```

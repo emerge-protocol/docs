@@ -1,97 +1,66 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Emerge API"
+description: "Privacy-first access to consented user data for personalization and insights"
 ---
 
-## Setting up
+Access user data with explicit consent. Emerge handles the complexity of consent collection, data portability compliance, and secure data transfer so you can focus on building great experiences.
 
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get your first integration running in 30 minutes
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Link API" icon="link" href="/link/overview">
+    Collect user consent with a hosted flow
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Query API" icon="database" href="/query/overview">
+    Retrieve consented user data
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="AI Integration" icon="sparkles" href="/ai/overview">
+    Connect AI tools directly to these docs
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## How it works
 
-Everything you need to create world-class documentation.
+<Steps>
+  <Step title="User grants consent">
+    Embed Emerge Link in your app. Users authenticate with their data provider and grant consent in a compliant flow.
+  </Step>
+  <Step title="Data is exported">
+    Emerge securely exports the user's data from their provider account. You're notified via webhook when ready.
+  </Step>
+  <Step title="You query the data">
+    Use the Query API to retrieve search history, browsing data, YouTube history, and ad interactions.
+  </Step>
+</Steps>
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+## Available data types
 
-## Need inspiration?
+| Data Type | Description | Use Cases |
+|-----------|-------------|-----------|
+| Search History | Google search queries with timestamps | Intent analysis, personalization |
+| Browsing History | Page visits with titles and timestamps | Interest profiling, recommendations |
+| YouTube History | Watched videos with channels | Content preferences, media planning |
+| Ad Interactions | Ad clicks and views | Attribution, audience insights |
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
+## AI-Native documentation
+
+These docs are designed for AI-first workflows. Connect your AI tools directly to search and query this documentation.
+
+<CardGroup cols={3}>
+  <Card title="Claude" icon="message" href="/ai/mcp-setup#claude">
+    Add as a connector
+  </Card>
+  <Card title="Cursor" icon="code" href="/ai/mcp-setup#cursor">
+    Configure MCP server
+  </Card>
+  <Card title="VS Code" icon="window" href="/ai/mcp-setup#vs-code">
+    Add to MCP config
+  </Card>
+</CardGroup>
+
+## Get started
+
+<Card title="Create your account" icon="user-plus" href="https://dashboard.emergedata.ai">
+  Sign up for the Control Room to get your API credentials
 </Card>

@@ -1,0 +1,129 @@
+---
+title: "Query API Overview"
+description: "Retrieve consented user data with sync or async queries"
+---
+
+The Query API retrieves user data after they've granted consent through Emerge Link. Choose between synchronous (immediate response) or asynchronous (job-based) queries depending on your use case.
+
+## Available data types
+
+| Data Type | Endpoint | Description |
+|-----------|----------|-------------|
+| Search History | `/search`, `/sync/get_search` | Google search queries |
+| Browsing History | `/browsing`, `/sync/get_browsing` | Chrome browser history |
+| YouTube History | `/youtube`, `/sync/get_youtube` | Watched videos |
+| Ad Interactions | `/ads`, `/sync/get_ads` | Ad clicks and views |
+
+## Sync vs Async
+
+<Tabs>
+  <Tab title="Sync (Immediate)">
+    **Best for:** Real-time needs, smaller datasets, simple integrations
+
+    ```typescript
+    const response = await fetch(
+      `https://query.emergedata.ai/v1/sync/get_search?uid=${uid}`,
+      { headers: { 'Authorization': `Bearer ${token}` } }
+    );
+
+    const data = await response.json();
+    // Data returned immediately
+    ```
+
+    **Characteristics:**
+    - Response includes data directly
+    - 30-second timeout
+    - Simpler implementation
+  </Tab>
+  <Tab title="Async (Job-based)">
+    **Best for:** Large datasets, background processing, batch operations
+
+    ```typescript
+    // 1. Start the query
+    const startResponse = await fetch(
+      `https://query.emergedata.ai/v1/search?uid=${uid}`,
+      { headers: { 'Authorization': `Bearer ${token}` } }
+    );
+    const { task_id } = await startResponse.json();
+
+    // 2. Poll for results
+    const resultResponse = await fetch(
+      `https://query.emergedata.ai/v1/job/${task_id}`,
+      { headers: { 'Authorization': `Bearer ${token}` } }
+    );
+    const result = await resultResponse.json();
+
+    if (result.status === 'completed') {
+      // Process result.data
+    }
+    ```
+
+    **Characteristics:**
+    - Returns task ID immediately
+    - Poll `/v1/job/{task_id}` for results
+    - No timeout concerns
+  </Tab>
+</Tabs>
+
+## When to use each
+
+| Use Case | Recommendation |
+|----------|----------------|
+| User-facing dashboard | Sync - immediate response |
+| Background data processing | Async - handles any size |
+| Real-time personalization | Sync - low latency |
+| Batch analytics | Async - no timeout limits |
+| Mobile app | Sync - simpler error handling |
+
+## Authentication
+
+All Query API endpoints require a Bearer token:
+
+```bash
+curl 'https://query.emergedata.ai/v1/sync/get_search?uid=user_123' \
+  -H 'Authorization: Bearer your_api_token'
+```
+
+## Response format
+
+All endpoints return data in a consistent format:
+
+```json
+{
+  "data": [
+    {
+      "query": "best restaurants nearby",
+      "timestamp": "2024-01-15T10:30:00Z",
+      "source": "google"
+    }
+  ],
+  "cursor": "eyJsYXN0X2lkIjogMTIzNH0=",
+  "has_more": true
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `data` | Array of records |
+| `cursor` | Pagination token for next page |
+| `has_more` | Whether more records exist |
+
+## Error responses
+
+| Status | Code | Description |
+|--------|------|-------------|
+| 401 | `unauthorized` | Invalid or missing API token |
+| 404 | `user_not_found` | No consent for this user |
+| 429 | `rate_limited` | Too many requests |
+| 500 | `internal_error` | Server error (retry with backoff) |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Pagination" icon="arrow-right" href="/query/pagination">
+    Handle large datasets with cursors
+  </Card>
+  <Card title="API Reference" icon="code" href="/query/overview">
+    See all endpoints in the API tab
+  </Card>
+</CardGroup>
