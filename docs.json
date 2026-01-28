@@ -1,6 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "name": "Emerge API",
+  "theme": "willow",
   "colors": {
     "primary": "#1E3A5F",
     "light": "#2E5A8F",
