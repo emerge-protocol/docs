@@ -27,7 +27,7 @@ View your local preview at `http://localhost:3000`.
 
 ## Publishing
 
-Changes are deployed to production automatically after pushing to the default branch.
+See https://docs.emergedata.ai
 
 ## Troubleshooting
 
