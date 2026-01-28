@@ -1,0 +1,11 @@
+/* Custom styles for Emerge documentation */
+
+/* Make the logo bigger in the navbar */
+#navbar img[alt="light logo"],
+#navbar img[alt="dark logo"],
+#navbar a[href="/"] img,
+header img,
+nav img {
+  height: 32px !important;
+  width: auto !important;
+}
