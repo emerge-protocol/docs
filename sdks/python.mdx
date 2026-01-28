@@ -58,11 +58,7 @@ class EmergeLinkClient:
         self.config = config
         self._state_store: dict[str, dict] = {}
 
-    def create_link_url(
-        self,
-        user_id: str,
-        locale: Optional[str] = None
-    ) -> LinkResult:
+    def create_link_url(self, user_id: str) -> LinkResult:
         """Create a signed link URL for the consent flow."""
         # Use ISO 8601 timestamp
         timestamp = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
@@ -81,9 +77,6 @@ class EmergeLinkClient:
             'timestamp': timestamp,
             'uid': user_id
         }
-
-        if locale:
-            params['locale'] = locale
 
         # Sort and create signature (raw values, NOT URL-encoded)
         sorted_items = sorted(params.items())

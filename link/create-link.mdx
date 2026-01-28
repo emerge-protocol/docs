@@ -16,7 +16,7 @@ https://link.emergedata.ai/link/start?client_id=...&redirect_uri=...&state=...&t
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `client_id` | string | Your client identifier from the Control Room |
-| `redirect_uri` | string | URL to redirect after consent (must be registered) |
+| `redirect_uri` | string | URL to redirect after consent |
 | `state` | string | Random string for CSRF protection (you verify this in callback) |
 | `timestamp` | string | ISO 8601 timestamp (e.g., `2024-01-15T10:30:00.000Z`) |
 | `signature` | string | HMAC-SHA256 signature of sorted parameters |
@@ -27,7 +27,6 @@ https://link.emergedata.ai/link/start?client_id=...&redirect_uri=...&state=...&t
 |-----------|------|---------|-------------|
 | `uid` | string | - | Your user identifier (returned in callback) |
 | `flow_config` | string | - | Named configuration for custom branding |
-| `locale` | string | Browser | UI language code (e.g., `en`, `de`, `fr`) |
 
 ## Complete implementation
 
@@ -41,7 +40,6 @@ interface LinkParams {
   signingSecret: string;
   redirectUri: string;
   userId?: string;
-  locale?: string;
 }
 
 function createLinkUrl(params: LinkParams): string {
@@ -58,9 +56,6 @@ function createLinkUrl(params: LinkParams): string {
 
   if (params.userId) {
     urlParams.uid = params.userId;
-  }
-  if (params.locale) {
-    urlParams.locale = params.locale;
   }
 
   // Sort and create signature base (raw values, not URL-encoded)
@@ -145,7 +140,6 @@ class LinkParams:
     signing_secret: str
     redirect_uri: str
     user_id: Optional[str] = None
-    locale: Optional[str] = None
 
 
 def create_link_url(params: LinkParams) -> str:
@@ -162,8 +156,6 @@ def create_link_url(params: LinkParams) -> str:
 
     if params.user_id:
         url_params['uid'] = params.user_id
-    if params.locale:
-        url_params['locale'] = params.locale
 
     # Sort and create signature base (raw values, not URL-encoded)
     sorted_items = sorted(url_params.items())

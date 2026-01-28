@@ -10,7 +10,7 @@ Documentation for Emerge API - a privacy-first API for accessing consented user 
 - Theme: maple with Emerge brand colors (primary: #e36c35, light: #ff4f1a, dark: #2e1205)
 - Branding: Mintlify footer branding hidden (`branding.hide: true` in docs.json + CSS selector in style.css)
 - Custom styles: style.css - Logo sized to 32px height, Mintlify "Powered by" footer hidden via CSS
-- OpenAPI spec: openapi/emerge.json (v1.0.0, event_id type: integer)
+- OpenAPI spec: openapi/emerge.json (v0.0.10 spec changes as of 2026-01-28: removed flow_version, added flow_config, event_id type: integer)
 - AI integration: MCP (Model Context Protocol) enabled
 - Local dev: `mint dev` (requires global CLI: `npm i -g mint`)
 - Preview URL: http://localhost:3000
@@ -32,7 +32,7 @@ Documentation for Emerge API - a privacy-first API for accessing consented user 
 - `quickstart.mdx` - Lightning-fast integration guide with upfront AI tool setup section (MCP integration for Cursor, Claude Code, VS Code) at the beginning before prerequisites
 - `AGENTS.md` - AI-specific documentation guidelines (code examples, API patterns, terminology)
 - `CLAUDE.md` - This file - project memory for AI agents
-- `changelog.mdx` - Version history (current: v0.0.10)
+- `changelog.mdx` - Version history (current: v0.0.10 as of 2026-01-28)
 - `docs.json` - Navigation structure, Mintlify configuration, theme colors (maple theme with Emerge branding), support email: account@emergedata.ai
 - `openapi/emerge.json` - OpenAPI 3.1 spec for API reference, contact email: account@emergedata.ai
 - `README.md` - Documentation development guide
@@ -64,10 +64,11 @@ Every endpoint must document:
 ### Common integration patterns
 
 **Creating consent links:**
-- HMAC signing with sorted parameters
+- HMAC signing with sorted parameters using signing_secret
 - State parameter for CSRF protection
-- Timestamp for link expiration (30 days)
-- Optional flow_config parameter for custom branding
+- Timestamp in ISO 8601 format (new Date().toISOString() or datetime.now(timezone.utc).isoformat()) for link expiration (30 days)
+- Link URL endpoint: `/link/start?` (not `/link?`)
+- Optional flow_config parameter for custom branding (replaced deprecated flow_version)
 
 **Handling callbacks:**
 - State verification against stored values
@@ -169,9 +170,10 @@ mint validate
 | Ad Interactions | `/v1/sync/get_ads` | `/v1/ads` | Ad clicks and views |
 
 ### Link API endpoints
-- `POST /configs` - Create/update consent flow configuration (supports config_name, webhook_url, is_default)
+- `POST /configs` - Create/update consent flow configuration (supports config_name, webhook_url, is_default, flow_config)
 - `GET /consent/status/{uid}` - Returns array of consents with provider, scopes, valid_until, status, issued_at
 - `GET /export/status/{uid}` - Returns data_ready boolean, data_landed_at, export_status, export_completed_at
+- Link URL: `/link/start?` with parameters: client_id, redirect_uri, state, timestamp (ISO 8601), signature, optional: uid, flow_config
 
 ### Query API endpoints
 - Sync endpoints: 30s timeout, immediate JSON response, single uid parameter
@@ -184,13 +186,15 @@ mint validate
 - "consent" - User permission for data access
 - "export" - Data transfer from provider to Emerge
 - "query" - Retrieving user data via API
-- "flow_config" - Named configuration for custom branding
+- "signing_secret" - HMAC signing credential (not "client_secret")
+- "flow_config" - Named configuration for custom branding (replaced deprecated "flow_version")
 - "uid" or "partner_uid" - Partner's user identifier
 - "task_id" or "job_id" - Async query job identifier
 - "config_name" - Named configuration for consent flow (supports multiple configs per client)
 - "data_ready" - Boolean indicating if exported data is available for querying
 - "consents" - Array of provider-specific consent records with scopes and validity
 - "begin/end" - Date range parameters for async queries (replaced ingested_after/before)
+- "event_id" - Integer type in Query API responses (not string)
 
 ## API domains
 - Link API: https://link.emergedata.ai

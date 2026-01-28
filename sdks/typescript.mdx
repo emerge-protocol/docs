@@ -28,7 +28,6 @@ interface EmergeConfig {
 
 interface LinkParams {
   userId: string;
-  locale?: string;
 }
 
 interface CallbackParams {
@@ -68,10 +67,6 @@ class EmergeLinkClient {
       timestamp,
       uid: params.userId
     };
-
-    if (params.locale) {
-      urlParams.locale = params.locale;
-    }
 
     // Sort and create signature (raw values, NOT URL-encoded)
     const sortedKeys = Object.keys(urlParams).sort();
