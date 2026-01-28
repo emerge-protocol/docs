@@ -6,7 +6,7 @@
     "description": "Privacy-first API for accessing consented user data. Emerge provides two main services: **Link** for collecting user consent and **Query** for retrieving user data.",
     "contact": {
       "name": "Emerge Support",
-      "email": "support@emergedata.ai"
+      "email": "account@emergedata.ai"
     }
   },
   "servers": [

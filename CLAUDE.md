@@ -8,12 +8,14 @@ Documentation for Emerge API - a privacy-first API for accessing consented user 
 - Build system: Mintlify (cloud-hosted, auto-deploys from GitHub)
 - Config: docs.json (navigation, theme, branding)
 - Theme: maple with Emerge brand colors (primary: #e36c35, light: #ff4f1a, dark: #2e1205)
+- Branding: Mintlify footer branding hidden (`branding.hide: true`)
 - OpenAPI spec: openapi/emerge.json (v1.0.0)
 - AI integration: MCP (Model Context Protocol) enabled
 - Local dev: `mint dev` (requires global CLI: `npm i -g mint`)
 - Preview URL: http://localhost:3000
-- Logo: emerge-logo.svg (used for both light and dark modes)
+- Logo: emerge-logo.svg (300x80px, text-based with system-ui fonts, 58px bold, used for both light and dark modes)
 - Favicon: favicon.ico (MS Windows icon resource with 16x16 and 32x32 PNG icons)
+- Navbar: Primary CTA button links to Control Room (dashboard.emergedata.ai), support link in secondary navigation
 
 ## Content structure
 
@@ -108,7 +110,7 @@ description: Concise summary for SEO/navigation
 - `/essentials/` - Template content (code, images, markdown, navigation, etc.)
 - `/snippets/` - Reusable content snippets
 - `/images/` - Documentation images and diagrams
-- `/logo/` - Brand assets (emerge-logo.svg)
+- `/logo/` - Brand assets (emerge-logo.svg - 300x80px text-based logo)
 - `favicon.ico` - Site favicon (16x16 and 32x32 icons)
 
 ## Build and development

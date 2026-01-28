@@ -5,6 +5,38 @@ description: "Integrate Emerge in 30 minutes"
 
 This guide walks you through collecting your first user consent and querying their data.
 
+## Connect your AI tools
+
+Get AI-powered help while integrating by connecting these docs to your AI tools.
+
+<Tabs>
+  <Tab title="Cursor">
+    Add to `.cursor/mcp.json`:
+    ```json
+    {
+      "mcpServers": {
+        "Emerge": { "url": "https://emerge.mintlify.dev/mcp" }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Claude Code">
+    ```bash
+    claude mcp add emerge https://emerge.mintlify.dev/mcp
+    ```
+  </Tab>
+  <Tab title="VS Code">
+    Add to `.vscode/mcp.json`:
+    ```json
+    {
+      "servers": {
+        "Emerge": { "type": "http", "url": "https://emerge.mintlify.dev/mcp" }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
 ## Prerequisites
 
 <Check>Control Room account with API credentials</Check>

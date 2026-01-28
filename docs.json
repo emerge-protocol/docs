@@ -157,7 +157,7 @@
         },
         {
           "anchor": "Support",
-          "href": "mailto:support@emergedata.ai",
+          "href": "mailto:account@emergedata.ai",
           "icon": "envelope"
         }
       ]
@@ -167,7 +167,7 @@
     "links": [
       {
         "label": "Support",
-        "href": "mailto:support@emergedata.ai"
+        "href": "mailto:account@emergedata.ai"
       }
     ],
     "primary": {
