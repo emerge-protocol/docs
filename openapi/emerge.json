@@ -2,12 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Emerge API",
-    "version": "1.0.0",
-    "description": "Privacy-first API for accessing consented user data. Emerge provides two main services: **Link** for collecting user consent and **Query** for retrieving user data.",
-    "contact": {
-      "name": "Emerge Support",
-      "email": "account@emergedata.ai"
-    }
+    "version": "1.0.0"
   },
   "servers": [
     {
@@ -19,6 +14,2386 @@
       "description": "Query API - Data retrieval"
     }
   ],
+  "paths": {
+    "/configs": {
+      "post": {
+        "tags": [
+          "Link"
+        ],
+        "summary": "Create Flow Config",
+        "description": "Create a new flow configuration for the authenticated client.\n\nThis endpoint allows partners to programmatically create flow configurations\nwith custom branding. The logo is fetched from the provided URL, optimized\nfor display (resized to max 400x400 pixels), and stored in S3.\n\nArgs:\n    body: Flow configuration details including company name, logo URL, etc.\n    client_id: Authenticated client ID from JWT token\n\nReturns:\n    Created flow configuration with S3 logo URL and preview link\n\nRaises:\n    400: Invalid request (bad config name, unreachable logo, unsupported image type)\n    409: Config name already exists for this client\n    500: S3 upload failure",
+        "operationId": "create_flow_config_configs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Link_CreateFlowConfigRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Link_FlowConfigResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Link_HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-mint": {
+          "server": "https://link.emergedata.ai"
+        }
+      }
+    },
+    "/export/status/{uid}": {
+      "get": {
+        "tags": [
+          "Link"
+        ],
+        "summary": "Get Export Status",
+        "description": "Check if DPAPI export data is ready and queryable.\n\nPartners can poll this endpoint to know when user data\nhas been processed and is available in ClickHouse.\n\nArgs:\n    uid: Partner's user identifier (partner_uid)\n    client_id: Authenticated client ID from JWT\n\nReturns:\n    Status indicating if data is ready, with timestamps",
+        "operationId": "get_export_status_export_status__uid__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "uid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Uid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Link_ExportStatusResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Link_HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "server": "https://link.emergedata.ai"
+        }
+      }
+    },
+    "/v1/search": {
+      "get": {
+        "tags": [
+          "Query Async"
+        ],
+        "summary": "Search",
+        "operationId": "search_v1_search_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "begin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Begin"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "name": "ingested_begin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ingested Begin"
+            }
+          },
+          {
+            "name": "ingested_end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ingested End"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Users"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Query_CreateJobResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Query_HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "server": "https://query.emergedata.ai"
+        }
+      }
+    },
+    "/v1/browsing": {
+      "get": {
+        "tags": [
+          "Query Async"
+        ],
+        "summary": "Browsing",
+        "operationId": "browsing_v1_browsing_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "begin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Begin"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "name": "ingested_begin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ingested Begin"
+            }
+          },
+          {
+            "name": "ingested_end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ingested End"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Users"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Query_CreateJobResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Query_HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "server": "https://query.emergedata.ai"
+        }
+      }
+    },
+    "/v1/youtube": {
+      "get": {
+        "tags": [
+          "Query Async"
+        ],
+        "summary": "Youtube",
+        "operationId": "youtube_v1_youtube_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "begin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Begin"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "name": "ingested_begin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ingested Begin"
+            }
+          },
+          {
+            "name": "ingested_end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ingested End"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Users"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Query_CreateJobResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Query_HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "server": "https://query.emergedata.ai"
+        }
+      }
+    },
+    "/v1/ads": {
+      "get": {
+        "tags": [
+          "Query Async"
+        ],
+        "summary": "Ads",
+        "operationId": "ads_v1_ads_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "begin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Begin"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "name": "ingested_begin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ingested Begin"
+            }
+          },
+          {
+            "name": "ingested_end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ingested End"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Users"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Query_CreateJobResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Query_HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "server": "https://query.emergedata.ai"
+        }
+      }
+    },
+    "/v1/job/{task_id}": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Job",
+        "operationId": "job_v1_job__task_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Query_QueryJob"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Query_HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "server": "https://query.emergedata.ai"
+        }
+      }
+    },
+    "/v1/jobs": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Jobs",
+        "operationId": "jobs_v1_jobs_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Query_QueryJob"
+                  },
+                  "type": "array",
+                  "title": "Response Jobs V1 Jobs Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "x-mint": {
+          "server": "https://query.emergedata.ai"
+        }
+      }
+    },
+    "/v1/sync/get_search": {
+      "get": {
+        "tags": [
+          "Query Sync"
+        ],
+        "summary": "Get search history (synchronous)",
+        "description": "Returns search history data immediately using the api_search mart view. Limited to 10,000 rows.",
+        "operationId": "_inner_v1_sync_get_search_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "begin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by event timestamp (start)",
+              "title": "Begin"
+            },
+            "description": "Filter by event timestamp (start)"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by event timestamp (end)",
+              "title": "End"
+            },
+            "description": "Filter by event timestamp (end)"
+          },
+          {
+            "name": "ingested_begin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by ingestion timestamp (start)",
+              "title": "Ingested Begin"
+            },
+            "description": "Filter by ingestion timestamp (start)"
+          },
+          {
+            "name": "ingested_end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by ingestion timestamp (end), defaults to now()",
+              "title": "Ingested End"
+            },
+            "description": "Filter by ingestion timestamp (end), defaults to now()"
+          },
+          {
+            "name": "uid",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Your user reference",
+              "examples": [
+                "alice@yourcompany.com"
+              ],
+              "title": "Uid"
+            },
+            "description": "Your user reference"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Category subtree to filter by",
+              "examples": [
+                "/Shopping",
+                "/Finance/Investing"
+              ],
+              "title": "Category"
+            },
+            "description": "Category subtree to filter by"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100000000,
+              "minimum": 1,
+              "description": "Maximum number of rows to return",
+              "default": 1000,
+              "title": "Limit"
+            },
+            "description": "Maximum number of rows to return"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Pagination cursor from previous response",
+              "title": "Cursor"
+            },
+            "description": "Pagination cursor from previous response"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Query_SearchDataResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Query_HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "server": "https://query.emergedata.ai"
+        }
+      }
+    },
+    "/v1/sync/get_browsing": {
+      "get": {
+        "tags": [
+          "Query Sync"
+        ],
+        "summary": "Get browsing history (synchronous)",
+        "description": "Returns browsing history data immediately using the api_browsing mart view. Limited to 10,000 rows.",
+        "operationId": "_inner_v1_sync_get_browsing_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "begin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by event timestamp (start)",
+              "title": "Begin"
+            },
+            "description": "Filter by event timestamp (start)"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by event timestamp (end)",
+              "title": "End"
+            },
+            "description": "Filter by event timestamp (end)"
+          },
+          {
+            "name": "ingested_begin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by ingestion timestamp (start)",
+              "title": "Ingested Begin"
+            },
+            "description": "Filter by ingestion timestamp (start)"
+          },
+          {
+            "name": "ingested_end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by ingestion timestamp (end), defaults to now()",
+              "title": "Ingested End"
+            },
+            "description": "Filter by ingestion timestamp (end), defaults to now()"
+          },
+          {
+            "name": "uid",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Your user reference",
+              "examples": [
+                "alice@yourcompany.com"
+              ],
+              "title": "Uid"
+            },
+            "description": "Your user reference"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Category subtree to filter by",
+              "examples": [
+                "/Shopping",
+                "/Finance/Investing"
+              ],
+              "title": "Category"
+            },
+            "description": "Category subtree to filter by"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100000000,
+              "minimum": 1,
+              "description": "Maximum number of rows to return",
+              "default": 1000,
+              "title": "Limit"
+            },
+            "description": "Maximum number of rows to return"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Pagination cursor from previous response",
+              "title": "Cursor"
+            },
+            "description": "Pagination cursor from previous response"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Query_BrowsingDataResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Query_HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "server": "https://query.emergedata.ai"
+        }
+      }
+    },
+    "/v1/sync/get_youtube": {
+      "get": {
+        "tags": [
+          "Query Sync"
+        ],
+        "summary": "Get YouTube activity (synchronous)",
+        "description": "Returns YouTube activity data immediately using the api_youtube mart view. Limited to 10,000 rows.",
+        "operationId": "_inner_v1_sync_get_youtube_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "begin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by event timestamp (start)",
+              "title": "Begin"
+            },
+            "description": "Filter by event timestamp (start)"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by event timestamp (end)",
+              "title": "End"
+            },
+            "description": "Filter by event timestamp (end)"
+          },
+          {
+            "name": "ingested_begin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by ingestion timestamp (start)",
+              "title": "Ingested Begin"
+            },
+            "description": "Filter by ingestion timestamp (start)"
+          },
+          {
+            "name": "ingested_end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by ingestion timestamp (end), defaults to now()",
+              "title": "Ingested End"
+            },
+            "description": "Filter by ingestion timestamp (end), defaults to now()"
+          },
+          {
+            "name": "uid",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Your user reference",
+              "examples": [
+                "alice@yourcompany.com"
+              ],
+              "title": "Uid"
+            },
+            "description": "Your user reference"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Category subtree to filter by",
+              "examples": [
+                "/Shopping",
+                "/Finance/Investing"
+              ],
+              "title": "Category"
+            },
+            "description": "Category subtree to filter by"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100000000,
+              "minimum": 1,
+              "description": "Maximum number of rows to return",
+              "default": 1000,
+              "title": "Limit"
+            },
+            "description": "Maximum number of rows to return"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Pagination cursor from previous response",
+              "title": "Cursor"
+            },
+            "description": "Pagination cursor from previous response"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Query_YouTubeDataResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Query_HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "server": "https://query.emergedata.ai"
+        }
+      }
+    },
+    "/v1/sync/get_ads": {
+      "get": {
+        "tags": [
+          "Query Sync"
+        ],
+        "summary": "Get ad impressions (synchronous)",
+        "description": "Returns ad impression data immediately using the api_ads mart view. Limited to 10,000 rows.",
+        "operationId": "_inner_v1_sync_get_ads_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "begin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by event timestamp (start)",
+              "title": "Begin"
+            },
+            "description": "Filter by event timestamp (start)"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by event timestamp (end)",
+              "title": "End"
+            },
+            "description": "Filter by event timestamp (end)"
+          },
+          {
+            "name": "ingested_begin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by ingestion timestamp (start)",
+              "title": "Ingested Begin"
+            },
+            "description": "Filter by ingestion timestamp (start)"
+          },
+          {
+            "name": "ingested_end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by ingestion timestamp (end), defaults to now()",
+              "title": "Ingested End"
+            },
+            "description": "Filter by ingestion timestamp (end), defaults to now()"
+          },
+          {
+            "name": "uid",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Your user reference",
+              "examples": [
+                "alice@yourcompany.com"
+              ],
+              "title": "Uid"
+            },
+            "description": "Your user reference"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Category subtree to filter by",
+              "examples": [
+                "/Shopping",
+                "/Finance/Investing"
+              ],
+              "title": "Category"
+            },
+            "description": "Category subtree to filter by"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100000000,
+              "minimum": 1,
+              "description": "Maximum number of rows to return",
+              "default": 1000,
+              "title": "Limit"
+            },
+            "description": "Maximum number of rows to return"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Pagination cursor from previous response",
+              "title": "Cursor"
+            },
+            "description": "Pagination cursor from previous response"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Query_AdsDataResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Query_HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "server": "https://query.emergedata.ai"
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Link_CreateFlowConfigRequest": {
+        "properties": {
+          "config_name": {
+            "type": "string",
+            "title": "Config Name"
+          },
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          },
+          "logo_url": {
+            "type": "string",
+            "title": "Logo Url"
+          },
+          "privacy_policy_url": {
+            "type": "string",
+            "title": "Privacy Policy Url"
+          },
+          "webhook_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Webhook Url"
+          },
+          "flow_version": {
+            "type": "string",
+            "title": "Flow Version",
+            "default": "lm"
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "config_name",
+          "company_name",
+          "logo_url",
+          "privacy_policy_url"
+        ],
+        "title": "CreateFlowConfigRequest",
+        "description": "Request to create a new flow configuration via API."
+      },
+      "Link_ExportStatusResponse": {
+        "properties": {
+          "uid": {
+            "type": "string",
+            "title": "Uid"
+          },
+          "data_ready": {
+            "type": "boolean",
+            "title": "Data Ready"
+          },
+          "data_landed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Landed At"
+          },
+          "export_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Export Status"
+          },
+          "export_completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Export Completed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "uid",
+          "data_ready"
+        ],
+        "title": "ExportStatusResponse",
+        "description": "Response for export data status check."
+      },
+      "Link_FlowConfigResponse": {
+        "properties": {
+          "config_id": {
+            "type": "string",
+            "title": "Config Id"
+          },
+          "config_name": {
+            "type": "string",
+            "title": "Config Name"
+          },
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          },
+          "logo_url": {
+            "type": "string",
+            "title": "Logo Url"
+          },
+          "privacy_policy_url": {
+            "type": "string",
+            "title": "Privacy Policy Url"
+          },
+          "webhook_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Webhook Url"
+          },
+          "flow_version": {
+            "type": "string",
+            "title": "Flow Version"
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default"
+          },
+          "preview_url": {
+            "type": "string",
+            "title": "Preview Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "config_id",
+          "config_name",
+          "company_name",
+          "logo_url",
+          "privacy_policy_url",
+          "webhook_url",
+          "flow_version",
+          "is_default",
+          "preview_url"
+        ],
+        "title": "FlowConfigResponse",
+        "description": "Response after creating a flow configuration."
+      },
+      "Link_HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/Link_ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Link_ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "Query_AdsDataResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Query_AdsEvent"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "default": false
+          },
+          "applied_ingested_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applied Ingested End"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "AdsDataResponse"
+      },
+      "Query_AdsEvent": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "event_id": {
+            "type": "integer",
+            "title": "Event Id"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "ingested_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ingested At"
+          },
+          "source_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Domain"
+          },
+          "landing_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Landing Domain"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "brands": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Brands"
+          },
+          "ad_network": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ad Network"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "event_id",
+          "timestamp",
+          "ingested_at",
+          "source_domain",
+          "landing_domain",
+          "url",
+          "title",
+          "category",
+          "brands",
+          "ad_network"
+        ],
+        "title": "AdsEvent"
+      },
+      "Query_BrowsingDataResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Query_BrowsingEvent"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "default": false
+          },
+          "applied_ingested_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applied Ingested End"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "BrowsingDataResponse"
+      },
+      "Query_BrowsingEvent": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "event_id": {
+            "type": "integer",
+            "title": "Event Id"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "ingested_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ingested At"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "page_category": {
+            "type": "string",
+            "title": "Page Category"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "brands": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Brands"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "event_id",
+          "timestamp",
+          "ingested_at",
+          "url",
+          "title",
+          "page_category",
+          "category",
+          "brands"
+        ],
+        "title": "BrowsingEvent"
+      },
+      "Query_CreateJobResponse": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/Query_JobStatus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "status"
+        ],
+        "title": "CreateJobResponse"
+      },
+      "Query_HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/Query_ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Query_JobStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "RUNNING",
+          "COMPLETED",
+          "FAILED"
+        ],
+        "title": "JobStatus"
+      },
+      "Query_QueryJob": {
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Task Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/Query_JobStatus"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "expire_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expire At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "task_id",
+          "status",
+          "created_at"
+        ],
+        "title": "QueryJob"
+      },
+      "Query_SearchDataResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Query_SearchEvent"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "default": false
+          },
+          "applied_ingested_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applied Ingested End"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "SearchDataResponse"
+      },
+      "Query_SearchEvent": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "event_id": {
+            "type": "integer",
+            "title": "Event Id"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "ingested_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ingested At"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query"
+          },
+          "intent": {
+            "type": "string",
+            "title": "Intent"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "brands": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Brands"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "event_id",
+          "timestamp",
+          "ingested_at",
+          "url",
+          "title",
+          "query",
+          "intent",
+          "category",
+          "brands"
+        ],
+        "title": "SearchEvent"
+      },
+      "Query_ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "Query_YouTubeDataResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Query_YouTubeEvent"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "default": false
+          },
+          "applied_ingested_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applied Ingested End"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "YouTubeDataResponse"
+      },
+      "Query_YouTubeEvent": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "event_id": {
+            "type": "integer",
+            "title": "Event Id"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "ingested_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ingested At"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "brands": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Brands"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "event_id",
+          "timestamp",
+          "ingested_at",
+          "url",
+          "title",
+          "category",
+          "brands"
+        ],
+        "title": "YouTubeEvent"
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API token from the Control Room. Include as `Authorization: Bearer <token>`"
+      }
+    }
+  },
   "security": [
     {
       "bearerAuth": []
@@ -41,1355 +2416,5 @@
       "name": "Jobs",
       "description": "Job status and management"
     }
-  ],
-  "paths": {
-    "/configs": {
-      "post": {
-        "operationId": "createConfig",
-        "summary": "Create flow configuration",
-        "description": "Create or update a client's consent flow configuration. This defines company branding, webhook URL, and flow settings shown during the consent flow.",
-        "tags": ["Link"],
-        "x-mint": {
-          "server": "https://link.emergedata.ai"
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/FlowConfig"
-              },
-              "example": {
-                "config_name": "default",
-                "company_name": "Acme Corp",
-                "logo_url": "https://acme.com/logo.png",
-                "privacy_policy_url": "https://acme.com/privacy",
-                "is_default": true
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Configuration created or updated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FlowConfigResponse"
-                },
-                "example": {
-                  "success": true,
-                  "client_id": "acme_corp",
-                  "config_name": "default"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid configuration",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - Invalid or missing API token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/consent/status/{uid}": {
-      "get": {
-        "operationId": "getConsentStatus",
-        "summary": "Check consent status",
-        "description": "Check the consent status for a specific user. Returns an array of consents with provider, scopes, validity, and timestamps.",
-        "tags": ["Link"],
-        "x-mint": {
-          "server": "https://link.emergedata.ai"
-        },
-        "parameters": [
-          {
-            "name": "uid",
-            "in": "path",
-            "required": true,
-            "description": "User identifier (partner_uid from callback)",
-            "schema": {
-              "type": "string"
-            },
-            "example": "user_12345"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Consent status retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsentStatus"
-                },
-                "example": {
-                  "uid": "user_12345",
-                  "consents": [
-                    {
-                      "provider": "google-gmail",
-                      "scopes": ["gmail.readonly", "gmail.metadata"],
-                      "valid_until": "2025-01-15T10:30:00Z",
-                      "status": "active",
-                      "issued_at": "2024-01-15T10:30:00Z"
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "User not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/export/status/{uid}": {
-      "get": {
-        "operationId": "getExportStatus",
-        "summary": "Check export status",
-        "description": "Check the data export status for a user. Exports are processed asynchronously after consent is granted.",
-        "tags": ["Link"],
-        "x-mint": {
-          "server": "https://link.emergedata.ai"
-        },
-        "parameters": [
-          {
-            "name": "uid",
-            "in": "path",
-            "required": true,
-            "description": "User identifier",
-            "schema": {
-              "type": "string"
-            },
-            "example": "user_12345"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Export status retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ExportStatus"
-                },
-                "example": {
-                  "uid": "user_12345",
-                  "data_ready": true,
-                  "data_landed_at": "2024-01-15T10:35:00Z",
-                  "export_status": "completed",
-                  "export_completed_at": "2024-01-15T10:35:00Z"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Export job not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/search": {
-      "get": {
-        "operationId": "getSearchAsync",
-        "summary": "Query search history (async)",
-        "description": "Start an asynchronous query for search history of up to 25 users. Returns a task ID for polling. When complete, results are available as a Parquet file via presigned S3 URL.",
-        "tags": ["Query Async"],
-        "x-mint": {
-          "server": "https://query.emergedata.ai"
-        },
-        "parameters": [
-          {
-            "name": "users",
-            "in": "query",
-            "required": true,
-            "description": "Array of user identifiers (max 25)",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "maxItems": 25
-            },
-            "style": "form",
-            "explode": true,
-            "example": ["user_12345", "user_67890"]
-          },
-          {
-            "name": "begin",
-            "in": "query",
-            "required": false,
-            "description": "Filter results with timestamp after this date (ISO 8601)",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            },
-            "example": "2024-01-01T00:00:00Z"
-          },
-          {
-            "name": "end",
-            "in": "query",
-            "required": false,
-            "description": "Filter results with timestamp before this date (ISO 8601)",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          }
-        ],
-        "responses": {
-          "202": {
-            "description": "Query accepted, task created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AsyncTaskResponse"
-                },
-                "example": {
-                  "task_id": "task_abc123",
-                  "status": "pending"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/browsing": {
-      "get": {
-        "operationId": "getBrowsingAsync",
-        "summary": "Query browsing history (async)",
-        "description": "Start an asynchronous query for browsing history of up to 25 users. Returns a task ID for polling. When complete, results are available as a Parquet file via presigned S3 URL.",
-        "tags": ["Query Async"],
-        "x-mint": {
-          "server": "https://query.emergedata.ai"
-        },
-        "parameters": [
-          {
-            "name": "users",
-            "in": "query",
-            "required": true,
-            "description": "Array of user identifiers (max 25)",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "maxItems": 25
-            },
-            "style": "form",
-            "explode": true
-          },
-          {
-            "name": "begin",
-            "in": "query",
-            "required": false,
-            "description": "Filter results with timestamp after this date (ISO 8601)",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "end",
-            "in": "query",
-            "required": false,
-            "description": "Filter results with timestamp before this date (ISO 8601)",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          }
-        ],
-        "responses": {
-          "202": {
-            "description": "Query accepted, task created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AsyncTaskResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/youtube": {
-      "get": {
-        "operationId": "getYoutubeAsync",
-        "summary": "Query YouTube history (async)",
-        "description": "Start an asynchronous query for YouTube watch history of up to 25 users. Returns a task ID for polling. When complete, results are available as a Parquet file via presigned S3 URL.",
-        "tags": ["Query Async"],
-        "x-mint": {
-          "server": "https://query.emergedata.ai"
-        },
-        "parameters": [
-          {
-            "name": "users",
-            "in": "query",
-            "required": true,
-            "description": "Array of user identifiers (max 25)",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "maxItems": 25
-            },
-            "style": "form",
-            "explode": true
-          },
-          {
-            "name": "begin",
-            "in": "query",
-            "required": false,
-            "description": "Filter results with timestamp after this date (ISO 8601)",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "end",
-            "in": "query",
-            "required": false,
-            "description": "Filter results with timestamp before this date (ISO 8601)",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          }
-        ],
-        "responses": {
-          "202": {
-            "description": "Query accepted, task created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AsyncTaskResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/ads": {
-      "get": {
-        "operationId": "getAdsAsync",
-        "summary": "Query ad interactions (async)",
-        "description": "Start an asynchronous query for ad interaction history of up to 25 users. Returns a task ID for polling. When complete, results are available as a Parquet file via presigned S3 URL.",
-        "tags": ["Query Async"],
-        "x-mint": {
-          "server": "https://query.emergedata.ai"
-        },
-        "parameters": [
-          {
-            "name": "users",
-            "in": "query",
-            "required": true,
-            "description": "Array of user identifiers (max 25)",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "maxItems": 25
-            },
-            "style": "form",
-            "explode": true
-          },
-          {
-            "name": "begin",
-            "in": "query",
-            "required": false,
-            "description": "Filter results with timestamp after this date (ISO 8601)",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "end",
-            "in": "query",
-            "required": false,
-            "description": "Filter results with timestamp before this date (ISO 8601)",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          }
-        ],
-        "responses": {
-          "202": {
-            "description": "Query accepted, task created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AsyncTaskResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/job/{task_id}": {
-      "get": {
-        "operationId": "getJob",
-        "summary": "Get job status and results",
-        "description": "Poll for the status of an async query job. When status is `completed`, the response includes a presigned S3 URL to download results as a Parquet file.",
-        "tags": ["Jobs"],
-        "x-mint": {
-          "server": "https://query.emergedata.ai"
-        },
-        "parameters": [
-          {
-            "name": "task_id",
-            "in": "path",
-            "required": true,
-            "description": "Task ID from the async query response",
-            "schema": {
-              "type": "string"
-            },
-            "example": "task_abc123"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Job status and results",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/JobResult"
-                },
-                "examples": {
-                  "pending": {
-                    "summary": "Job still processing",
-                    "value": {
-                      "task_id": "task_abc123",
-                      "status": "pending"
-                    }
-                  },
-                  "completed": {
-                    "summary": "Job completed with results",
-                    "value": {
-                      "task_id": "task_abc123",
-                      "status": "completed",
-                      "download_url": "https://emerge-exports.s3.amazonaws.com/results/task_abc123.parquet?...",
-                      "expires_at": "2024-01-15T11:30:00Z",
-                      "record_count": 1250
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Job not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/jobs": {
-      "get": {
-        "operationId": "listJobs",
-        "summary": "List all jobs",
-        "description": "List all async query jobs for the authenticated client.",
-        "tags": ["Jobs"],
-        "x-mint": {
-          "server": "https://query.emergedata.ai"
-        },
-        "parameters": [
-          {
-            "name": "status",
-            "in": "query",
-            "required": false,
-            "description": "Filter by job status",
-            "schema": {
-              "type": "string",
-              "enum": ["pending", "running", "completed", "failed"]
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "description": "Maximum number of jobs to return",
-            "schema": {
-              "type": "integer",
-              "default": 50,
-              "maximum": 100
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "List of jobs",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/JobList"
-                },
-                "example": {
-                  "jobs": [
-                    {
-                      "task_id": "task_abc123",
-                      "type": "search",
-                      "status": "completed",
-                      "created_at": "2024-01-15T10:30:00Z"
-                    },
-                    {
-                      "task_id": "task_def456",
-                      "type": "browsing",
-                      "status": "pending",
-                      "created_at": "2024-01-15T10:35:00Z"
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/sync/get_search": {
-      "get": {
-        "operationId": "getSearchSync",
-        "summary": "Query search history (sync)",
-        "description": "Synchronously query user search history. Returns results directly in the response. 30-second timeout. Best for smaller datasets or real-time needs.",
-        "tags": ["Query Sync"],
-        "x-mint": {
-          "server": "https://query.emergedata.ai"
-        },
-        "parameters": [
-          {
-            "name": "uid",
-            "in": "query",
-            "required": true,
-            "description": "User identifier",
-            "schema": {
-              "type": "string"
-            },
-            "example": "user_12345"
-          },
-          {
-            "name": "ingested_begin",
-            "in": "query",
-            "required": false,
-            "description": "Filter results ingested at or after this timestamp (ISO 8601). Use for delta queries.",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "ingested_end",
-            "in": "query",
-            "required": false,
-            "description": "Filter results ingested before this timestamp (ISO 8601). Use for delta queries.",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "required": false,
-            "description": "Pagination cursor from previous response (next_cursor)",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "description": "Maximum number of results to return",
-            "schema": {
-              "type": "integer",
-              "default": 100,
-              "maximum": 1000
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Search history results",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SyncResult"
-                },
-                "example": {
-                  "entries": [
-                    {
-                      "event_id": 12345678,
-                      "query": "best restaurants nearby",
-                      "timestamp": "2024-01-15T10:30:00Z",
-                      "ingested_at": "2024-01-15T10:31:00Z",
-                      "brands": ["Google"]
-                    },
-                    {
-                      "event_id": 12345679,
-                      "query": "weather forecast",
-                      "timestamp": "2024-01-15T09:15:00Z",
-                      "ingested_at": "2024-01-15T09:16:00Z",
-                      "brands": ["Google"]
-                    }
-                  ],
-                  "count": 2,
-                  "has_more": true,
-                  "next_cursor": "eyJsYXN0X2lkIjogMTIzNH0=",
-                  "applied_ingested_end": "2024-01-15T10:31:00Z"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/sync/get_browsing": {
-      "get": {
-        "operationId": "getBrowsingSync",
-        "summary": "Query browsing history (sync)",
-        "description": "Synchronously query user browsing history. Returns results directly in the response. 30-second timeout.",
-        "tags": ["Query Sync"],
-        "x-mint": {
-          "server": "https://query.emergedata.ai"
-        },
-        "parameters": [
-          {
-            "name": "uid",
-            "in": "query",
-            "required": true,
-            "description": "User identifier",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "ingested_begin",
-            "in": "query",
-            "required": false,
-            "description": "Filter results ingested at or after this timestamp (ISO 8601)",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "ingested_end",
-            "in": "query",
-            "required": false,
-            "description": "Filter results ingested before this timestamp (ISO 8601)",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "required": false,
-            "description": "Pagination cursor from previous response (next_cursor)",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "description": "Maximum number of results to return",
-            "schema": {
-              "type": "integer",
-              "default": 100,
-              "maximum": 1000
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Browsing history results",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SyncResult"
-                },
-                "example": {
-                  "entries": [
-                    {
-                      "event_id": 12345678,
-                      "url": "https://example.com/article",
-                      "title": "Example Article",
-                      "timestamp": "2024-01-15T10:30:00Z",
-                      "ingested_at": "2024-01-15T10:31:00Z",
-                      "brands": ["Chrome"]
-                    }
-                  ],
-                  "count": 1,
-                  "has_more": true,
-                  "next_cursor": "eyJsYXN0X2lkIjogMTIzNH0=",
-                  "applied_ingested_end": "2024-01-15T10:31:00Z"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/sync/get_youtube": {
-      "get": {
-        "operationId": "getYoutubeSync",
-        "summary": "Query YouTube history (sync)",
-        "description": "Synchronously query user YouTube watch history. Returns results directly in the response. 30-second timeout.",
-        "tags": ["Query Sync"],
-        "x-mint": {
-          "server": "https://query.emergedata.ai"
-        },
-        "parameters": [
-          {
-            "name": "uid",
-            "in": "query",
-            "required": true,
-            "description": "User identifier",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "ingested_begin",
-            "in": "query",
-            "required": false,
-            "description": "Filter results ingested at or after this timestamp (ISO 8601)",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "ingested_end",
-            "in": "query",
-            "required": false,
-            "description": "Filter results ingested before this timestamp (ISO 8601)",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "required": false,
-            "description": "Pagination cursor from previous response (next_cursor)",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "description": "Maximum number of results to return",
-            "schema": {
-              "type": "integer",
-              "default": 100,
-              "maximum": 1000
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "YouTube history results",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SyncResult"
-                },
-                "example": {
-                  "entries": [
-                    {
-                      "event_id": 12345678,
-                      "video_id": "dQw4w9WgXcQ",
-                      "title": "Example Video",
-                      "channel": "Example Channel",
-                      "timestamp": "2024-01-15T10:30:00Z",
-                      "ingested_at": "2024-01-15T10:31:00Z",
-                      "brands": ["YouTube"]
-                    }
-                  ],
-                  "count": 1,
-                  "has_more": false,
-                  "next_cursor": null,
-                  "applied_ingested_end": "2024-01-15T10:31:00Z"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/sync/get_ads": {
-      "get": {
-        "operationId": "getAdsSync",
-        "summary": "Query ad interactions (sync)",
-        "description": "Synchronously query user ad interaction history. Returns results directly in the response. 30-second timeout.",
-        "tags": ["Query Sync"],
-        "x-mint": {
-          "server": "https://query.emergedata.ai"
-        },
-        "parameters": [
-          {
-            "name": "uid",
-            "in": "query",
-            "required": true,
-            "description": "User identifier",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "ingested_begin",
-            "in": "query",
-            "required": false,
-            "description": "Filter results ingested at or after this timestamp (ISO 8601)",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "ingested_end",
-            "in": "query",
-            "required": false,
-            "description": "Filter results ingested before this timestamp (ISO 8601)",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "cursor",
-            "in": "query",
-            "required": false,
-            "description": "Pagination cursor from previous response (next_cursor)",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "description": "Maximum number of results to return",
-            "schema": {
-              "type": "integer",
-              "default": 100,
-              "maximum": 1000
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Ad interaction results",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SyncResult"
-                },
-                "example": {
-                  "entries": [
-                    {
-                      "event_id": 12345678,
-                      "advertiser": "Example Brand",
-                      "ad_type": "display",
-                      "timestamp": "2024-01-15T10:30:00Z",
-                      "ingested_at": "2024-01-15T10:31:00Z",
-                      "brands": ["Google Ads"]
-                    }
-                  ],
-                  "count": 1,
-                  "has_more": false,
-                  "next_cursor": null,
-                  "applied_ingested_end": "2024-01-15T10:31:00Z"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  },
-  "components": {
-    "securitySchemes": {
-      "bearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "description": "API token from the Control Room. Include as `Authorization: Bearer <token>`"
-      }
-    },
-    "schemas": {
-      "FlowConfig": {
-        "type": "object",
-        "required": ["config_name", "company_name", "logo_url", "privacy_policy_url"],
-        "properties": {
-          "config_name": {
-            "type": "string",
-            "description": "Configuration name (use 'default' for primary config)",
-            "example": "default"
-          },
-          "company_name": {
-            "type": "string",
-            "description": "Company name displayed in the consent flow",
-            "example": "Acme Corp"
-          },
-          "logo_url": {
-            "type": "string",
-            "format": "uri",
-            "description": "URL to company logo (HTTPS required, recommended 200x200px)",
-            "example": "https://acme.com/logo.png"
-          },
-          "privacy_policy_url": {
-            "type": "string",
-            "format": "uri",
-            "description": "URL to company privacy policy",
-            "example": "https://acme.com/privacy"
-          },
-          "webhook_url": {
-            "type": "string",
-            "format": "uri",
-            "description": "URL to receive webhook events",
-            "example": "https://acme.com/webhooks/emerge"
-          },
-          "is_default": {
-            "type": "boolean",
-            "description": "Whether this is the default configuration",
-            "default": false
-          }
-        }
-      },
-      "FlowConfigResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "client_id": {
-            "type": "string"
-          },
-          "config_name": {
-            "type": "string"
-          }
-        }
-      },
-      "ConsentStatus": {
-        "type": "object",
-        "properties": {
-          "uid": {
-            "type": "string",
-            "description": "User identifier"
-          },
-          "consents": {
-            "type": "array",
-            "description": "List of active consents for this user",
-            "items": {
-              "$ref": "#/components/schemas/Consent"
-            }
-          }
-        }
-      },
-      "Consent": {
-        "type": "object",
-        "properties": {
-          "provider": {
-            "type": "string",
-            "description": "Data provider (e.g., google-gmail)",
-            "example": "google-gmail"
-          },
-          "scopes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Granted OAuth scopes",
-            "example": ["gmail.readonly", "gmail.metadata"]
-          },
-          "valid_until": {
-            "type": "string",
-            "format": "date-time",
-            "description": "When the consent expires"
-          },
-          "status": {
-            "type": "string",
-            "enum": ["active", "expired", "revoked"],
-            "description": "Current consent status"
-          },
-          "issued_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "When consent was originally granted"
-          }
-        }
-      },
-      "ExportStatus": {
-        "type": "object",
-        "properties": {
-          "uid": {
-            "type": "string",
-            "description": "User identifier"
-          },
-          "data_ready": {
-            "type": "boolean",
-            "description": "Whether data is ready for querying"
-          },
-          "data_landed_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "When data became available"
-          },
-          "export_status": {
-            "type": "string",
-            "enum": ["pending", "running", "completed", "failed", "insufficient_data"],
-            "description": "Export job status"
-          },
-          "export_completed_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "When export completed"
-          }
-        }
-      },
-      "AsyncTaskResponse": {
-        "type": "object",
-        "properties": {
-          "task_id": {
-            "type": "string",
-            "description": "Unique task identifier for polling"
-          },
-          "status": {
-            "type": "string",
-            "enum": ["pending"],
-            "description": "Initial task status"
-          }
-        }
-      },
-      "JobResult": {
-        "type": "object",
-        "properties": {
-          "task_id": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string",
-            "enum": ["pending", "running", "completed", "failed"]
-          },
-          "download_url": {
-            "type": "string",
-            "format": "uri",
-            "description": "Presigned S3 URL to download Parquet results (present when completed)"
-          },
-          "expires_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "When the download URL expires"
-          },
-          "record_count": {
-            "type": "integer",
-            "description": "Number of records in the result file"
-          },
-          "error": {
-            "type": "string",
-            "description": "Error message (present when status is failed)"
-          }
-        }
-      },
-      "JobList": {
-        "type": "object",
-        "properties": {
-          "jobs": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/JobSummary"
-            }
-          }
-        }
-      },
-      "JobSummary": {
-        "type": "object",
-        "properties": {
-          "task_id": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string",
-            "enum": ["search", "browsing", "youtube", "ads"]
-          },
-          "status": {
-            "type": "string",
-            "enum": ["pending", "running", "completed", "failed"]
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "SyncResult": {
-        "type": "object",
-        "properties": {
-          "entries": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SyncEntry"
-            },
-            "description": "Array of data entries"
-          },
-          "count": {
-            "type": "integer",
-            "description": "Number of entries in this response"
-          },
-          "has_more": {
-            "type": "boolean",
-            "description": "Whether more results are available"
-          },
-          "next_cursor": {
-            "type": "string",
-            "nullable": true,
-            "description": "Cursor for fetching next page (null if no more results)"
-          },
-          "applied_ingested_end": {
-            "type": "string",
-            "format": "date-time",
-            "description": "The actual ingested_end timestamp applied. Use as ingested_begin for next delta query."
-          }
-        }
-      },
-      "SyncEntry": {
-        "type": "object",
-        "properties": {
-          "event_id": {
-            "type": "integer",
-            "description": "Unique identifier for this event"
-          },
-          "timestamp": {
-            "type": "string",
-            "format": "date-time",
-            "description": "When the event occurred"
-          },
-          "ingested_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "When the event was ingested by Emerge"
-          },
-          "brands": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Associated brand(s) for this entry"
-          },
-          "query": {
-            "type": "string",
-            "description": "Search query text (search entries only)"
-          },
-          "url": {
-            "type": "string",
-            "format": "uri",
-            "description": "Page URL (browsing entries only)"
-          },
-          "title": {
-            "type": "string",
-            "description": "Page or video title"
-          },
-          "video_id": {
-            "type": "string",
-            "description": "YouTube video ID (YouTube entries only)"
-          },
-          "channel": {
-            "type": "string",
-            "description": "YouTube channel name (YouTube entries only)"
-          },
-          "advertiser": {
-            "type": "string",
-            "description": "Advertiser name (ads entries only)"
-          },
-          "ad_type": {
-            "type": "string",
-            "description": "Type of ad interaction (ads entries only)"
-          }
-        }
-      },
-      "Error": {
-        "type": "object",
-        "properties": {
-          "error": {
-            "type": "string",
-            "description": "Error code"
-          },
-          "message": {
-            "type": "string",
-            "description": "Human-readable error message"
-          }
-        }
-      }
-    }
-  }
+  ]
 }
