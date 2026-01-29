@@ -13,21 +13,21 @@ You are building a full-stack app that integrates Emerge Link + Query end-to-end
 Rules:
 - Do NOT hardcode Emerge endpoints or parameter lists. Always read the live docs via MCP for exact references.
 - Keep Link (consent) and Query (data retrieval) separate.
-- Before coding, ask the user for config fields and confirm any URLs/params against the docs. At minimum ask for: client_id, signing_secret, api_token, redirect_uri, webhook_secret (if using webhooks), flow_config name (if any), and the current Link start URL + Query endpoint URLs from the docs.
+- Before coding, ask the user for config fields and confirm any URLs/params against the docs. At minimum ask for: client_id, signing_secret, api_token, redirect_uri, flow_config name (if any), and the current Link start URL + Query endpoint URLs + export/consent status URLs from the docs.
 - Generate signed links server-side. Never expose signing_secret or API tokens in the frontend.
 - Generate a random state, store it server-side, and verify it on callback.
 - Never ask end-users for uid. Use your internal user id (server-side) or omit uid and store the callback uid.
-- Wait for export.completed webhook or handle empty results with retry + backoff.
+- Poll export readiness using the Link export status endpoint: https://link.emergedata.ai/export/status/{uid}.
 - Provide TypeScript and Python examples with async/await and error handling.
 - Use privacy-first messaging and explain why each step matters when it is not obvious.
 
 Required references (read before coding):
 - /link/create-link (signature rules + link parameters)
 - /link/callbacks (status + error handling)
+- Link API export status endpoint (GET /export/status/{uid})
+- Link API consent status endpoint (GET /consent/status/{uid})
 - /query/overview (sync vs async + auth)
 - /query/pagination (cursor + delta sync)
-- /link/webhooks (export.completed + verification)
-- /link/data-wallet (revocation handling)
 
 Output requirements:
 1) Direct answer
@@ -40,13 +40,13 @@ Output requirements:
 
 1. **Create a signed consent link** server-side and redirect the user.
 2. **Handle the callback** by verifying `state` and storing the returned `uid`.
-3. **Wait for export completion** (webhook) before querying.
+3. **Poll export status** via `https://link.emergedata.ai/export/status/{uid}` before querying.
 4. **Query data** using the stored `uid`, with pagination and delta sync where needed.
-5. **Handle revocations** to stay privacy-first.
+5. **Check consent status** via `https://link.emergedata.ai/consent/status/{uid}` and stop processing if revoked.
 
 Why this matters:
 - The `uid` is the canonical user scope. Keeping it server-side prevents wrong-user data access.
-- Webhook-driven readiness avoids empty results and improves UX.
+- Polling export status avoids empty results and improves UX when data is not ready.
 - Keeping secrets off the client prevents data leakage.
 
 ## Integration scaffold (server-side)
@@ -65,14 +65,16 @@ const uidMap = new Map<string, string>();
 function loadConfig() {
   const linkStartUrl = process.env.EMERGE_LINK_START_URL;
   const querySearchUrl = process.env.EMERGE_QUERY_SEARCH_URL;
+  const exportStatusUrl = process.env.EMERGE_EXPORT_STATUS_URL;
+  const consentStatusUrl = process.env.EMERGE_CONSENT_STATUS_URL;
   const signingSecret = process.env.EMERGE_SIGNING_SECRET;
   const linkParamsJson = process.env.EMERGE_LINK_PARAMS_JSON;
 
-  if (!linkStartUrl || !querySearchUrl || !signingSecret || !linkParamsJson) {
-    throw new Error('Missing EMERGE_LINK_START_URL, EMERGE_QUERY_SEARCH_URL, EMERGE_SIGNING_SECRET, or EMERGE_LINK_PARAMS_JSON');
+  if (!linkStartUrl || !querySearchUrl || !exportStatusUrl || !consentStatusUrl || !signingSecret || !linkParamsJson) {
+    throw new Error('Missing EMERGE_LINK_START_URL, EMERGE_QUERY_SEARCH_URL, EMERGE_EXPORT_STATUS_URL, EMERGE_CONSENT_STATUS_URL, EMERGE_SIGNING_SECRET, or EMERGE_LINK_PARAMS_JSON');
   }
 
-  return { linkStartUrl, querySearchUrl, signingSecret, linkParamsJson };
+  return { linkStartUrl, querySearchUrl, exportStatusUrl, consentStatusUrl, signingSecret, linkParamsJson };
 }
 
 function signParams(params: Record<string, string>, signingSecret: string): string {
@@ -149,6 +151,46 @@ app.get('/emerge/callback', async (req, res) => {
   }
 });
 
+function buildStatusUrl(template: string, uid: string): string {
+  if (template.includes('{uid}')) {
+    return template.replace('{uid}', encodeURIComponent(uid));
+  }
+  return template;
+}
+
+async function pollExportReady(uid: string): Promise<void> {
+  const { exportStatusUrl } = loadConfig();
+  const token = process.env.EMERGE_API_TOKEN;
+  if (!token) {
+    throw new Error('Missing EMERGE_API_TOKEN');
+  }
+
+  const maxAttempts = 10;
+  const baseDelayMs = 1500;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const url = buildStatusUrl(exportStatusUrl, uid);
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`Export status failed (${response.status}): ${body}`);
+    }
+
+    const status = await response.json();
+    if (status?.data_ready === true) {
+      return;
+    }
+
+    const delay = baseDelayMs * attempt;
+    await new Promise(resolve => setTimeout(resolve, delay));
+  }
+
+  throw new Error('Export not ready after polling');
+}
+
 app.get('/query-search', async (req, res) => {
   try {
     const internalUserId = String(req.query.user_id || '');
@@ -156,6 +198,8 @@ app.get('/query-search', async (req, res) => {
     if (!emergeUid) {
       return res.status(404).send('User not connected');
     }
+
+    await pollExportReady(emergeUid);
 
     const { querySearchUrl } = loadConfig();
     const url = new URL(querySearchUrl);
@@ -178,6 +222,37 @@ app.get('/query-search', async (req, res) => {
   }
 });
 
+app.get('/consent-status', async (req, res) => {
+  try {
+    const internalUserId = String(req.query.user_id || '');
+    const emergeUid = uidMap.get(internalUserId);
+    if (!emergeUid) {
+      return res.status(404).send('User not connected');
+    }
+
+    const { consentStatusUrl } = loadConfig();
+    const token = process.env.EMERGE_API_TOKEN;
+    if (!token) {
+      return res.status(500).send('Missing EMERGE_API_TOKEN');
+    }
+
+    const url = buildStatusUrl(consentStatusUrl, emergeUid);
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`Consent status failed (${response.status}): ${body}`);
+    }
+
+    const data = await response.json();
+    return res.json(data);
+  } catch (err) {
+    console.error('Consent status error', err);
+    return res.status(500).send('Server error');
+  }
+});
 app.listen(3000, () => {
   console.log('Server running on http://localhost:3000');
 });
@@ -189,6 +264,7 @@ import json
 import hmac
 import hashlib
 import secrets
+import asyncio
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 
@@ -206,18 +282,23 @@ uid_map: dict[str, str] = {}
 def load_config() -> dict:
     link_start_url = os.getenv("EMERGE_LINK_START_URL")
     query_search_url = os.getenv("EMERGE_QUERY_SEARCH_URL")
+    export_status_url = os.getenv("EMERGE_EXPORT_STATUS_URL")
+    consent_status_url = os.getenv("EMERGE_CONSENT_STATUS_URL")
     signing_secret = os.getenv("EMERGE_SIGNING_SECRET")
     link_params_json = os.getenv("EMERGE_LINK_PARAMS_JSON")
 
-    if not all([link_start_url, query_search_url, signing_secret, link_params_json]):
+    if not all([link_start_url, query_search_url, export_status_url, consent_status_url, signing_secret, link_params_json]):
         raise RuntimeError(
             "Missing EMERGE_LINK_START_URL, EMERGE_QUERY_SEARCH_URL, "
+            "EMERGE_EXPORT_STATUS_URL, EMERGE_CONSENT_STATUS_URL, "
             "EMERGE_SIGNING_SECRET, or EMERGE_LINK_PARAMS_JSON"
         )
 
     return {
         "link_start_url": link_start_url,
         "query_search_url": query_search_url,
+        "export_status_url": export_status_url,
+        "consent_status_url": consent_status_url,
         "signing_secret": signing_secret,
         "link_params_json": link_params_json
     }
@@ -247,6 +328,39 @@ def build_signed_link_url(internal_user_id: str) -> tuple[str, str]:
 
     url = f"{config['link_start_url']}?{urlencode(params)}"
     return url, state
+
+
+def build_status_url(template: str, uid: str) -> str:
+    if "{uid}" in template:
+        return template.replace("{uid}", uid)
+    return template
+
+
+async def poll_export_ready(uid: str) -> None:
+    config = load_config()
+    token = os.getenv("EMERGE_API_TOKEN")
+    if not token:
+        raise HTTPException(status_code=500, detail="Missing EMERGE_API_TOKEN")
+
+    max_attempts = 10
+    base_delay = 1.5
+
+    async with httpx.AsyncClient(timeout=30) as client:
+        for attempt in range(1, max_attempts + 1):
+            url = build_status_url(config["export_status_url"], uid)
+            response = await client.get(
+                url,
+                headers={"Authorization": f"Bearer {token}"}
+            )
+            response.raise_for_status()
+            payload = response.json()
+
+            if payload.get("data_ready") is True:
+                return
+
+            await asyncio.sleep(base_delay * attempt)
+
+    raise HTTPException(status_code=504, detail="Export not ready after polling")
 
 
 @app.get("/connect-data")
@@ -292,6 +406,7 @@ async def query_search(user_id: str):
         raise HTTPException(status_code=500, detail="Missing EMERGE_API_TOKEN")
 
     try:
+        await poll_export_ready(emerge_uid)
         async with httpx.AsyncClient(timeout=30) as client:
             response = await client.get(
                 config["query_search_url"],
@@ -304,6 +419,30 @@ async def query_search(user_id: str):
         raise HTTPException(status_code=502, detail=f"Query failed: {exc}") from exc
 
 
+@app.get("/consent-status")
+async def consent_status(user_id: str):
+    emerge_uid = uid_map.get(user_id)
+    if not emerge_uid:
+        raise HTTPException(status_code=404, detail="User not connected")
+
+    config = load_config()
+    token = os.getenv("EMERGE_API_TOKEN")
+    if not token:
+        raise HTTPException(status_code=500, detail="Missing EMERGE_API_TOKEN")
+
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            url = build_status_url(config["consent_status_url"], emerge_uid)
+            response = await client.get(
+                url,
+                headers={"Authorization": f"Bearer {token}"}
+            )
+            response.raise_for_status()
+            return response.json()
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"Consent status failed: {exc}") from exc
+
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=3000)
 ```
@@ -314,14 +453,13 @@ if __name__ == "__main__":
 
 - [Create Links](/link/create-link)
 - [Callbacks](/link/callbacks)
+- [Link Overview](/link/overview)
 - [Query Overview](/query/overview)
 - [Pagination & Delta Queries](/query/pagination)
-- [Webhooks](/link/webhooks)
-- [Data Wallet](/link/data-wallet)
 
 ## Edge cases / gotchas
 
 - `state` must be verified on callback or you risk account linking attacks.
-- Querying before export completion can return empty results; use `export.completed` or backoff retries.
-- If a user revokes consent, stop processing and delete data to stay privacy-first.
+- Querying before export is ready can return empty results; poll export status and retry with backoff.
+- If a user revokes consent, stop processing and delete data to stay privacy-first; use the consent status endpoint to detect changes.
 - Never prompt the user to type a `uid` — it must stay server-side.
