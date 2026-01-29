@@ -1,0 +1,647 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Emerge API",
+    "version": "1.0.0",
+    "description": "Privacy-first API for accessing consented user data. Emerge provides two main services: **Link** for collecting user consent and **Query** for retrieving user data.",
+    "contact": {
+      "name": "Emerge Support",
+      "email": "account@emergedata.ai"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://link.emergedata.ai",
+      "description": "Link API - Consent collection"
+    }
+  ],
+  "paths": {
+    "/link/start": {
+      "get": {
+        "tags": [
+          "Link"
+        ],
+        "summary": "Link Start",
+        "description": "Start Link OAuth flow.\n\nTWO MODES:\n\n1. SESSION-BASED (sid provided):\n   - Requires ONLY: sid\n   - Optional: oauth_complete, flow_version\n   - All other params (client_id, redirect_uri, state, signature, timestamp) are REDUNDANT and IGNORED\n   - Looks up session from database, gets all data from there\n   - Serves frontend with session data\n   - If oauth_complete=true, frontend handles OAuth completion and redirect\n\n2. INITIAL FLOW (no sid):\n   - Requires: client_id, redirect_uri, state, signature, timestamp\n   - Validates HMAC signature for security\n   - Creates new session in database\n   - Serves frontend with new sid\n\nThe sid-based mode eliminates redundant parameters - once a session exists,\neverything is stored in the database and can be retrieved via sid alone.",
+        "operationId": "link_start_link_start_get",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Session ID - if provided, all other params except oauth_complete/flow_version are ignored",
+              "title": "Sid"
+            },
+            "description": "Session ID - if provided, all other params except oauth_complete/flow_version are ignored"
+          },
+          {
+            "name": "oauth_complete",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "OAuth completion flag for mobile flow",
+              "default": false,
+              "title": "Oauth Complete"
+            },
+            "description": "OAuth completion flag for mobile flow"
+          },
+          {
+            "name": "oauth_error",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "OAuth error code for mobile flow - shows trouble modal",
+              "title": "Oauth Error"
+            },
+            "description": "OAuth error code for mobile flow - shows trouble modal"
+          },
+          {
+            "name": "flow_version",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "UI flow version: lm, lm2, lm3",
+              "default": "lm",
+              "title": "Flow Version"
+            },
+            "description": "UI flow version: lm, lm2, lm3"
+          },
+          {
+            "name": "flow_config",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Named flow config - mutually exclusive with flow_version",
+              "title": "Flow Config"
+            },
+            "description": "Named flow config - mutually exclusive with flow_version"
+          },
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Client identifier (required if no sid)",
+              "title": "Client Id"
+            },
+            "description": "Client identifier (required if no sid)"
+          },
+          {
+            "name": "redirect_uri",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Redirect URI (required if no sid)",
+              "title": "Redirect Uri"
+            },
+            "description": "Redirect URI (required if no sid)"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Partner state/session data (optional)",
+              "title": "State"
+            },
+            "description": "Partner state/session data (optional)"
+          },
+          {
+            "name": "uid",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Partner's user identifier (optional, we generate if not provided)",
+              "title": "Uid"
+            },
+            "description": "Partner's user identifier (optional, we generate if not provided)"
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Locale (optional, defaults to 'en' if not provided)",
+              "title": "Locale"
+            },
+            "description": "Locale (optional, defaults to 'en' if not provided)"
+          },
+          {
+            "name": "signature",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "HMAC signature (required if no sid)",
+              "title": "Signature"
+            },
+            "description": "HMAC signature (required if no sid)"
+          },
+          {
+            "name": "timestamp",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Request timestamp (required if no sid)",
+              "title": "Timestamp"
+            },
+            "description": "Request timestamp (required if no sid)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "server": "https://link.emergedata.ai"
+        }
+      }
+    },
+    "/configs": {
+      "post": {
+        "tags": [
+          "Link"
+        ],
+        "summary": "Create Flow Config",
+        "description": "Create a new flow configuration for the authenticated client.\n\nThis endpoint allows partners to programmatically create flow configurations\nwith custom branding. The logo is fetched from the provided URL, optimized\nfor display (resized to max 400x400 pixels), and stored in S3.\n\nArgs:\n    body: Flow configuration details including company name, logo URL, etc.\n    client_id: Authenticated client ID from JWT token\n\nReturns:\n    Created flow configuration with S3 logo URL and preview link\n\nRaises:\n    400: Invalid request (bad config name, unreachable logo, unsupported image type)\n    409: Config name already exists for this client\n    500: S3 upload failure",
+        "operationId": "create_flow_config_configs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFlowConfigRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlowConfigResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-mint": {
+          "server": "https://link.emergedata.ai"
+        }
+      }
+    },
+    "/consent/status/{uid}": {
+      "get": {
+        "tags": [
+          "Link"
+        ],
+        "summary": "Get Consent Status",
+        "description": "Get consent status for a pairwise subject.\n\nReconstructs consent state from webhook event history since\nconsent_token table is deprecated.\n\nArgs:\n    uid: Pairwise subject identifier (partner_uid)\n    client_id: Authenticated client ID\n\nReturns:\n    Dictionary containing the subject and a list of consent records (not actual tokens, but reconstructed consent states).",
+        "operationId": "get_consent_status_consent_status__uid__get",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "uid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Uid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "server": "https://link.emergedata.ai"
+        }
+      }
+    },
+    "/export/status/{uid}": {
+      "get": {
+        "tags": [
+          "Link"
+        ],
+        "summary": "Get Export Status",
+        "description": "Check if DPAPI export data is ready and queryable.\n\nPartners can poll this endpoint to know when user data\nhas been processed and is available in ClickHouse.\n\nArgs:\n    uid: Partner's user identifier (partner_uid)\n    client_id: Authenticated client ID from JWT\n\nReturns:\n    Status indicating if data is ready, with timestamps",
+        "operationId": "get_export_status_export_status__uid__get",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "uid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Uid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportStatusResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "server": "https://link.emergedata.ai"
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateFlowConfigRequest": {
+        "properties": {
+          "config_name": {
+            "type": "string",
+            "title": "Config Name"
+          },
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          },
+          "logo_url": {
+            "type": "string",
+            "title": "Logo Url"
+          },
+          "privacy_policy_url": {
+            "type": "string",
+            "title": "Privacy Policy Url"
+          },
+          "webhook_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Webhook Url"
+          },
+          "flow_version": {
+            "type": "string",
+            "title": "Flow Version",
+            "default": "lm"
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "config_name",
+          "company_name",
+          "logo_url",
+          "privacy_policy_url"
+        ],
+        "title": "CreateFlowConfigRequest",
+        "description": "Request to create a new flow configuration via API."
+      },
+      "ExportStatusResponse": {
+        "properties": {
+          "uid": {
+            "type": "string",
+            "title": "Uid"
+          },
+          "data_ready": {
+            "type": "boolean",
+            "title": "Data Ready"
+          },
+          "data_landed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Landed At"
+          },
+          "export_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Export Status"
+          },
+          "export_completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Export Completed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "uid",
+          "data_ready"
+        ],
+        "title": "ExportStatusResponse",
+        "description": "Response for export data status check."
+      },
+      "FlowConfigResponse": {
+        "properties": {
+          "config_id": {
+            "type": "string",
+            "title": "Config Id"
+          },
+          "config_name": {
+            "type": "string",
+            "title": "Config Name"
+          },
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          },
+          "logo_url": {
+            "type": "string",
+            "title": "Logo Url"
+          },
+          "privacy_policy_url": {
+            "type": "string",
+            "title": "Privacy Policy Url"
+          },
+          "webhook_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Webhook Url"
+          },
+          "flow_version": {
+            "type": "string",
+            "title": "Flow Version"
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default"
+          },
+          "preview_url": {
+            "type": "string",
+            "title": "Preview Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "config_id",
+          "config_name",
+          "company_name",
+          "logo_url",
+          "privacy_policy_url",
+          "webhook_url",
+          "flow_version",
+          "is_default",
+          "preview_url"
+        ],
+        "title": "FlowConfigResponse",
+        "description": "Response after creating a flow configuration."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API token from the Control Room. Include as `Authorization: Bearer <token>`"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Link",
+      "description": "Consent flow configuration and status"
+    }
+  ]
+}

@@ -10,7 +10,7 @@ Documentation for Emerge API - a privacy-first API for accessing consented user 
 - Theme: maple with Emerge brand colors (primary: #e36c35, light: #ff4f1a, dark: #2e1205)
 - Branding: Mintlify footer branding hidden (`branding.hide: true` in docs.json + CSS selector in style.css)
 - Custom styles: style.css - Logo sized to 32px height, Mintlify "Powered by" footer hidden via CSS
-- OpenAPI spec: openapi/emerge.json (v0.0.10 spec changes as of 2026-01-28: removed flow_version, added flow_config, event_id type: integer)
+- OpenAPI specs: openapi/link.json and openapi/query.json (v0.0.10 spec changes as of 2026-01-28: removed flow_version, added flow_config, event_id type: integer)
 - AI integration: MCP (Model Context Protocol) enabled
 - Local dev: `mint dev` (requires global CLI: `npm i -g mint`)
 - Preview URL: http://localhost:3000
@@ -34,7 +34,8 @@ Documentation for Emerge API - a privacy-first API for accessing consented user 
 - `CLAUDE.md` - This file - project memory for AI agents
 - `changelog.mdx` - Version history (current: v0.0.10 as of 2026-01-28)
 - `docs.json` - Navigation structure, Mintlify configuration, theme colors (maple theme with Emerge branding), support email: account@emergedata.ai
-- `openapi/emerge.json` - OpenAPI 3.1 spec for API reference, contact email: account@emergedata.ai
+- `openapi/link.json` - OpenAPI 3.1 spec for Link API reference, contact email: account@emergedata.ai (auto-synced from atlas; do not edit manually)
+- `openapi/query.json` - OpenAPI 3.1 spec for Query API reference, contact email: account@emergedata.ai (auto-synced from atlas; do not edit manually)
 - `README.md` - Documentation development guide
 
 ## Writing standards
@@ -52,6 +53,7 @@ Documentation for Emerge API - a privacy-first API for accessing consented user 
 - Show complete, runnable snippets
 - Use async/await patterns for API calls
 - All code blocks must have language tags
+- Show only required fields in quickstart examples (optional fields can be documented separately)
 
 ### API documentation patterns
 Every endpoint must document:
@@ -110,7 +112,8 @@ description: Concise summary for SEO/navigation
 - `/ai-tools/*.mdx` - AI tool-specific setup guides (claude-code, cursor, windsurf) [Note: Directory exists in git but not filesystem - may be template content]
 - `/sdks/*.mdx` - SDK implementations (TypeScript, Python) - Copy-paste reference implementations
 - `/api-reference/` - Legacy API reference pages (deprecated - use OpenAPI auto-generated pages)
-- `/openapi/emerge.json` - OpenAPI 3.1 spec with Link and Query API endpoints
+- `/openapi/link.json` - OpenAPI 3.1 spec with Link API endpoints
+- `/openapi/query.json` - OpenAPI 3.1 spec with Query API endpoints
 - `/essentials/` - Template content (code, images, markdown, navigation, etc.)
 - `/snippets/` - Reusable content snippets
 - `/images/` - Documentation images and diagrams
@@ -170,7 +173,7 @@ mint validate
 | Ad Interactions | `/v1/sync/get_ads` | `/v1/ads` | Ad clicks and views |
 
 ### Link API endpoints
-- `POST /configs` - Create/update consent flow configuration (supports config_name, webhook_url, is_default, flow_config)
+- `POST /configs` - Create/update consent flow configuration (required: config_name, company_name, logo_url, privacy_policy_url, is_default; optional: webhook_url, flow_config)
 - `GET /consent/status/{uid}` - Returns array of consents with provider, scopes, valid_until, status, issued_at
 - `GET /export/status/{uid}` - Returns data_ready boolean, data_landed_at, export_status, export_completed_at
 - Link URL: `/link/start?` with parameters: client_id, redirect_uri, state, timestamp (ISO 8601), signature, optional: uid, flow_config
