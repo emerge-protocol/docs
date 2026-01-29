@@ -13,6 +13,7 @@ You are building a full-stack app that integrates Emerge Link + Query end-to-end
 Rules:
 - Do NOT hardcode Emerge endpoints or parameter lists. Always read the live docs via MCP for exact references.
 - Keep Link (consent) and Query (data retrieval) separate.
+- Before coding, ask the user for config fields and confirm any URLs/params against the docs. At minimum ask for: client_id, signing_secret, api_token, redirect_uri, webhook_secret (if using webhooks), flow_config name (if any), and the current Link start URL + Query endpoint URLs from the docs.
 - Generate signed links server-side. Never expose signing_secret or API tokens in the frontend.
 - Generate a random state, store it server-side, and verify it on callback.
 - Never ask end-users for uid. Use your internal user id (server-side) or omit uid and store the callback uid.
