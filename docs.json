@@ -18,6 +18,9 @@
     }
   },
   "openapi": "openapi/link.json",
+  "seo": {
+    "indexing": "all"
+  },
   "contextual": {
     "options": [
       "copy",
@@ -85,6 +88,7 @@
               "link/authentication",
               "link/create-link",
               "link/callbacks",
+              "link/data-wallet",
               "link/webhooks"
             ]
           },

@@ -91,6 +91,10 @@ response = requests.post(
 
 Create an HMAC-signed URL that users click to start the consent flow.
 
+<Warning>
+Do not ask end-users for `uid` or collect it in the frontend. Use your internal user id server-side or omit `uid` and store the generated callback `uid`. This keeps user scoping private and avoids wrong-user data access.
+</Warning>
+
 <CodeGroup>
 
 ```typescript TypeScript
@@ -198,7 +202,7 @@ After the user completes the consent flow, they're redirected to your `redirect_
 |-----------|-------------|
 | `status` | `success`, `reauthorized`, or `failure` |
 | `state` | The state value you provided (verify this matches) |
-| `uid` | The user identifier you provided |
+| `uid` | The user identifier returned by Emerge (your value or a generated one) |
 | `error_code` | Only present if `status=failure` |
 
 <CodeGroup>
@@ -299,6 +303,15 @@ print(search_history['data'])
 ```
 
 </CodeGroup>
+
+## Common mistakes to avoid
+
+- Using `https://link.emergedata.ai/link` instead of `https://link.emergedata.ai/link/start`
+- Signing URL parameters in the wrong order or signing URL-encoded values
+- Treating `state` as a user identifier or skipping state verification
+- Asking users to input `uid` or failing to store the callback `uid`
+- Calling Query before the `export.completed` webhook (handle empty results + retry)
+- Exposing `signing_secret` or API tokens in client-side code
 
 ## Next steps
 

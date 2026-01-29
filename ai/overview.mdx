@@ -97,6 +97,25 @@ Add the MCP server to your tool in one step:
 
 See [MCP Setup](/ai/mcp-setup) for detailed instructions for all tools.
 
+## One-shot prompt for app builders
+
+Use this prompt in tools like Lovable, Cursor, or Claude Code after connecting MCP:
+
+```text
+You are building a full-stack app that integrates Emerge Link + Query.
+Requirements:
+- Use https://link.emergedata.ai/link/start to start consent.
+- Generate HMAC-SHA256 signature over sorted raw params (exclude signature).
+- Use signing_secret for HMAC; never expose secrets in the frontend.
+- timestamp must be ISO 8601 (new Date().toISOString()).
+- Generate random state, store it server-side, verify on callback.
+- redirect_uri must be pre-approved in the Control Room.
+- Never ask end-users for uid. If you send uid, use your internal user id. Otherwise store the callback uid.
+- Query sync endpoints with uid: https://query.emergedata.ai/v1/sync/get_*
+- Wait for export.completed webhook or handle empty results with retry + backoff.
+Return TypeScript and Python examples with async/await and error handling.
+```
+
 ## Contextual menu
 
 Every page in these docs includes a contextual menu with one-click AI integrations. Look for the menu icon on any page to:

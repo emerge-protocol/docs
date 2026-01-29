@@ -11,8 +11,12 @@ After a user completes (or exits) the consent flow, they're redirected to your `
 |-----------|---------------|-------------|
 | `status` | Yes | `success`, `reauthorized`, or `failure` |
 | `state` | Yes | The state value you provided in the link |
-| `uid` | Yes | The user identifier you provided (or empty string) |
+| `uid` | Yes | The user identifier returned by Emerge. If you provided `uid`, you get the same value; if you omitted it, Emerge generates a pairwise `uid`. |
 | `error_code` | Only on failure | Error code explaining the failure |
+
+<Warning>
+Do not ask end-users for `uid` or collect it in the frontend. Store the callback `uid` server-side and map it to your internal user record. This avoids wrong-user data access and keeps identifiers private.
+</Warning>
 
 ## Status values
 
@@ -209,7 +213,7 @@ You can poll the export status endpoint if you prefer not to use webhooks. See [
 If a user clicks a consent link after they've already completed consent:
 
 - They see a brief "already connected" message
-- They're redirected to your wallet page (not back to your redirect_uri)
+- They're redirected to the [Data Wallet](/link/data-wallet) (not back to your `redirect_uri`)
 - No new callback is triggered
 
 This prevents confusion from re-processing completed flows.

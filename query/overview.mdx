@@ -91,6 +91,10 @@ curl 'https://query.emergedata.ai/v1/sync/get_search?uid=user_123' \
   -H 'Authorization: Bearer your_api_token'
 ```
 
+<Warning>
+Sync endpoints require `uid`. Use the callback `uid` you stored on your backend (or the same value you supplied in the Link URL). Never ask end-users for `uid`, and never call Query from the frontend since tokens and user mapping must stay server-side.
+</Warning>
+
 ## Sync response format
 
 Sync endpoints return JSON directly:

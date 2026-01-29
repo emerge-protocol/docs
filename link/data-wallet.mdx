@@ -1,0 +1,155 @@
+---
+title: "Data Wallet"
+description: "End-user dashboard for tracking access and revoking consent"
+---
+
+Data Wallet is the end-user dashboard at https://wallet.emergedata.ai where your users can see which companies have access to their data and revoke consent at any time. This keeps consent transparent and user-controlled.
+
+## When it appears
+
+- It is created after a user completes their first successful Link consent flow.
+- Your user receives an email notifying them they can track their data access and revoke consent for a specific company.
+
+## What users can do
+
+- Review all connected companies and data types
+- See which connections are active vs revoked
+- Revoke consent with a single toggle
+
+## Screenshots
+
+![Data Wallet landing view](/images/data-wallet-landing.png)
+![Data Wallet connections overview](/images/data-wallet-connections.png)
+
+## Handle revocations in your app
+
+When a user revokes consent in Data Wallet, you receive a `consent.revoked` webhook. Use it to stop processing and delete any stored data for that user.
+
+<CodeGroup>
+
+```typescript TypeScript
+import express from 'express';
+import crypto from 'crypto';
+
+const app = express();
+app.use(express.raw({ type: 'application/json' }));
+
+const WEBHOOK_SECRET = process.env.EMERGE_WEBHOOK_SECRET;
+if (!WEBHOOK_SECRET) {
+  throw new Error('Missing EMERGE_WEBHOOK_SECRET');
+}
+
+app.post('/webhooks/emerge', async (req, res) => {
+  try {
+    const signature = req.headers['x-emerge-signature'] as string | undefined;
+    if (!signature) {
+      return res.status(401).send('Missing signature');
+    }
+
+    const expected = crypto
+      .createHmac('sha256', WEBHOOK_SECRET)
+      .update(req.body)
+      .digest('hex');
+
+    if (signature !== expected) {
+      console.error('Invalid webhook signature');
+      return res.status(401).send('Invalid signature');
+    }
+
+    const payload = JSON.parse(req.body.toString('utf8')) as { event?: string; data?: { uid?: string } };
+    const { event, data } = payload;
+
+    if (event === 'consent.revoked' && data?.uid) {
+      await revokeLocalAccess(data.uid);
+    }
+
+    return res.status(200).send('OK');
+  } catch (err) {
+    console.error('Webhook error', err);
+    return res.status(500).send('Server error');
+  }
+});
+
+async function revokeLocalAccess(uid: string) {
+  await deleteUserData(uid);
+}
+
+async function deleteUserData(uid: string) {
+  console.log(`Deleting local data for ${uid}`);
+}
+
+app.listen(3000, () => {
+  console.log('Webhook listener running on http://localhost:3000');
+});
+```
+
+```python Python
+from fastapi import FastAPI, Request, HTTPException
+import hmac
+import hashlib
+import json
+import os
+from typing import Optional
+
+app = FastAPI()
+
+WEBHOOK_SECRET = os.getenv('EMERGE_WEBHOOK_SECRET')
+if not WEBHOOK_SECRET:
+    raise RuntimeError('Missing EMERGE_WEBHOOK_SECRET')
+
+@app.post('/webhooks/emerge')
+async def emerge_webhook(request: Request):
+    try:
+        signature = request.headers.get('x-emerge-signature')
+        if not signature:
+            raise HTTPException(status_code=401, detail='Missing signature')
+        payload = await request.body()
+
+        expected = hmac.new(
+            WEBHOOK_SECRET.encode(),
+            payload,
+            hashlib.sha256
+        ).hexdigest()
+
+        if not hmac.compare_digest(signature, expected):
+            raise HTTPException(status_code=401, detail='Invalid signature')
+
+        body = json.loads(payload)
+        event = body.get('event')
+        data = body.get('data', {})
+
+        if event == 'consent.revoked':
+            await revoke_local_access(data.get('uid'))
+
+        return {'status': 'ok'}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail='Server error') from exc
+
+async def revoke_local_access(uid: Optional[str]):
+    if not uid:
+        return
+    await delete_user_data(uid)
+
+async def delete_user_data(uid: str):
+    print(f'Deleting local data for {uid}')
+```
+
+</CodeGroup>
+
+## Related documentation
+
+<CardGroup cols={2}>
+  <Card title="Callbacks" icon="arrow-right" href="/link/callbacks">
+    Understand redirect behavior after consent
+  </Card>
+  <Card title="Webhooks" icon="bolt" href="/link/webhooks">
+    Receive consent changes like revocations
+  </Card>
+</CardGroup>
+
+## Edge cases
+
+- If a user opens a completed Link flow again, they are redirected to the Data Wallet instead of your `redirect_uri`.
+- If you keep cached data, delete it when you receive `consent.revoked` to stay privacy-first.

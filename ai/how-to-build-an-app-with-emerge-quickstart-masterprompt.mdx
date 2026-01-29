@@ -1,0 +1,326 @@
+---
+title: "How to build an app with Emerge (Quickstart Masterprompt)"
+description: "Hidden masterprompt for AI agents to build an end-to-end Emerge integration"
+---
+
+Use the masterprompt below to guide AI agents through an end-to-end Emerge integration without hardcoding API specs. It keeps identifiers private and instructs the agent to read the live docs for exact endpoints, parameters, and response formats.
+
+## Masterprompt (copy/paste)
+
+```text
+You are building a full-stack app that integrates Emerge Link + Query end-to-end.
+
+Rules:
+- Do NOT hardcode Emerge endpoints or parameter lists. Always read the live docs via MCP for exact references.
+- Keep Link (consent) and Query (data retrieval) separate.
+- Generate signed links server-side. Never expose signing_secret or API tokens in the frontend.
+- Generate a random state, store it server-side, and verify it on callback.
+- Never ask end-users for uid. Use your internal user id (server-side) or omit uid and store the callback uid.
+- Wait for export.completed webhook or handle empty results with retry + backoff.
+- Provide TypeScript and Python examples with async/await and error handling.
+- Use privacy-first messaging and explain why each step matters when it is not obvious.
+
+Required references (read before coding):
+- /link/create-link (signature rules + link parameters)
+- /link/callbacks (status + error handling)
+- /query/overview (sync vs async + auth)
+- /query/pagination (cursor + delta sync)
+- /link/webhooks (export.completed + verification)
+- /link/data-wallet (revocation handling)
+
+Output requirements:
+1) Direct answer
+2) Code examples (TypeScript + Python)
+3) Links to the docs pages you used
+4) Edge cases/gotchas
+```
+
+## Flow summary (spec-free)
+
+1. **Create a signed consent link** server-side and redirect the user.
+2. **Handle the callback** by verifying `state` and storing the returned `uid`.
+3. **Wait for export completion** (webhook) before querying.
+4. **Query data** using the stored `uid`, with pagination and delta sync where needed.
+5. **Handle revocations** to stay privacy-first.
+
+Why this matters:
+- The `uid` is the canonical user scope. Keeping it server-side prevents wrong-user data access.
+- Webhook-driven readiness avoids empty results and improves UX.
+- Keeping secrets off the client prevents data leakage.
+
+## Integration scaffold (server-side)
+
+<CodeGroup>
+
+```typescript TypeScript
+import express from 'express';
+import crypto from 'crypto';
+
+const app = express();
+
+const stateStore = new Map<string, { internalUserId: string; createdAt: number }>();
+const uidMap = new Map<string, string>();
+
+function loadConfig() {
+  const linkStartUrl = process.env.EMERGE_LINK_START_URL;
+  const querySearchUrl = process.env.EMERGE_QUERY_SEARCH_URL;
+  const signingSecret = process.env.EMERGE_SIGNING_SECRET;
+  const linkParamsJson = process.env.EMERGE_LINK_PARAMS_JSON;
+
+  if (!linkStartUrl || !querySearchUrl || !signingSecret || !linkParamsJson) {
+    throw new Error('Missing EMERGE_LINK_START_URL, EMERGE_QUERY_SEARCH_URL, EMERGE_SIGNING_SECRET, or EMERGE_LINK_PARAMS_JSON');
+  }
+
+  return { linkStartUrl, querySearchUrl, signingSecret, linkParamsJson };
+}
+
+function signParams(params: Record<string, string>, signingSecret: string): string {
+  const signatureBase = Object.keys(params)
+    .sort()
+    .map(key => `${key}=${params[key]}`)
+    .join('&');
+
+  return crypto
+    .createHmac('sha256', signingSecret)
+    .update(signatureBase)
+    .digest('hex');
+}
+
+function buildSignedLinkUrl(internalUserId: string): { url: string; state: string } {
+  const { linkStartUrl, signingSecret, linkParamsJson } = loadConfig();
+
+  const state = crypto.randomBytes(16).toString('hex');
+  const timestamp = new Date().toISOString();
+
+  const params: Record<string, string> = JSON.parse(linkParamsJson);
+  params.state = state;
+  params.timestamp = timestamp;
+  params.uid = internalUserId;
+
+  const signature = signParams(params, signingSecret);
+  const finalParams = new URLSearchParams(params);
+  finalParams.append('signature', signature);
+
+  return { url: `${linkStartUrl}?${finalParams.toString()}`, state };
+}
+
+app.get('/connect-data', async (req, res) => {
+  try {
+    const internalUserId = String(req.query.user_id || '');
+    if (!internalUserId) {
+      return res.status(400).send('Missing user_id');
+    }
+
+    const { url, state } = buildSignedLinkUrl(internalUserId);
+    stateStore.set(state, { internalUserId, createdAt: Date.now() });
+
+    return res.redirect(url);
+  } catch (err) {
+    console.error('Failed to create link', err);
+    return res.status(500).send('Server error');
+  }
+});
+
+app.get('/emerge/callback', async (req, res) => {
+  try {
+    const { status, state, uid, error_code } = req.query as Record<string, string>;
+    const record = stateStore.get(state);
+
+    if (!record) {
+      return res.status(400).send('Invalid state');
+    }
+
+    stateStore.delete(state);
+
+    if (status === 'success' || status === 'reauthorized') {
+      if (!uid) {
+        return res.status(400).send('Missing uid');
+      }
+      uidMap.set(record.internalUserId, uid);
+      return res.redirect('/dashboard?connected=true');
+    }
+
+    const errorMessage = encodeURIComponent(error_code || 'unknown_error');
+    return res.redirect(`/connect?error=${errorMessage}`);
+  } catch (err) {
+    console.error('Callback error', err);
+    return res.status(500).send('Server error');
+  }
+});
+
+app.get('/query-search', async (req, res) => {
+  try {
+    const internalUserId = String(req.query.user_id || '');
+    const emergeUid = uidMap.get(internalUserId);
+    if (!emergeUid) {
+      return res.status(404).send('User not connected');
+    }
+
+    const { querySearchUrl } = loadConfig();
+    const url = new URL(querySearchUrl);
+    url.searchParams.set('uid', emergeUid);
+
+    const response = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${process.env.EMERGE_API_TOKEN}` }
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`Query failed (${response.status}): ${body}`);
+    }
+
+    const data = await response.json();
+    return res.json(data);
+  } catch (err) {
+    console.error('Query error', err);
+    return res.status(500).send('Server error');
+  }
+});
+
+app.listen(3000, () => {
+  console.log('Server running on http://localhost:3000');
+});
+```
+
+```python Python
+import os
+import json
+import hmac
+import hashlib
+import secrets
+from datetime import datetime, timezone
+from urllib.parse import urlencode
+
+import httpx
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import RedirectResponse
+import uvicorn
+
+app = FastAPI()
+
+state_store: dict[str, dict] = {}
+uid_map: dict[str, str] = {}
+
+
+def load_config() -> dict:
+    link_start_url = os.getenv("EMERGE_LINK_START_URL")
+    query_search_url = os.getenv("EMERGE_QUERY_SEARCH_URL")
+    signing_secret = os.getenv("EMERGE_SIGNING_SECRET")
+    link_params_json = os.getenv("EMERGE_LINK_PARAMS_JSON")
+
+    if not all([link_start_url, query_search_url, signing_secret, link_params_json]):
+        raise RuntimeError(
+            "Missing EMERGE_LINK_START_URL, EMERGE_QUERY_SEARCH_URL, "
+            "EMERGE_SIGNING_SECRET, or EMERGE_LINK_PARAMS_JSON"
+        )
+
+    return {
+        "link_start_url": link_start_url,
+        "query_search_url": query_search_url,
+        "signing_secret": signing_secret,
+        "link_params_json": link_params_json
+    }
+
+
+def sign_params(params: dict, signing_secret: str) -> str:
+    signature_base = "&".join(f"{k}={v}" for k, v in sorted(params.items()))
+    return hmac.new(
+        signing_secret.encode(),
+        signature_base.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+
+def build_signed_link_url(internal_user_id: str) -> tuple[str, str]:
+    config = load_config()
+    state = secrets.token_hex(16)
+    timestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+    params = json.loads(config["link_params_json"])
+    params["state"] = state
+    params["timestamp"] = timestamp
+    params["uid"] = internal_user_id
+
+    signature = sign_params(params, config["signing_secret"])
+    params["signature"] = signature
+
+    url = f"{config['link_start_url']}?{urlencode(params)}"
+    return url, state
+
+
+@app.get("/connect-data")
+async def connect_data(user_id: str):
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Missing user_id")
+
+    url, state = build_signed_link_url(user_id)
+    state_store[state] = {"internal_user_id": user_id, "created_at": datetime.now(timezone.utc).timestamp()}
+
+    return RedirectResponse(url)
+
+
+@app.get("/emerge/callback")
+async def emerge_callback(
+    status: str,
+    state: str,
+    uid: str = "",
+    error_code: str | None = None
+):
+    record = state_store.pop(state, None)
+    if not record:
+        raise HTTPException(status_code=400, detail="Invalid state")
+
+    if status in ("success", "reauthorized"):
+        if not uid:
+            raise HTTPException(status_code=400, detail="Missing uid")
+        uid_map[record["internal_user_id"]] = uid
+        return RedirectResponse("/dashboard?connected=true")
+
+    return RedirectResponse(f"/connect?error={error_code or 'unknown_error'}")
+
+
+@app.get("/query-search")
+async def query_search(user_id: str):
+    emerge_uid = uid_map.get(user_id)
+    if not emerge_uid:
+        raise HTTPException(status_code=404, detail="User not connected")
+
+    config = load_config()
+    token = os.getenv("EMERGE_API_TOKEN")
+    if not token:
+        raise HTTPException(status_code=500, detail="Missing EMERGE_API_TOKEN")
+
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.get(
+                config["query_search_url"],
+                params={"uid": emerge_uid},
+                headers={"Authorization": f"Bearer {token}"}
+            )
+            response.raise_for_status()
+            return response.json()
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"Query failed: {exc}") from exc
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=3000)
+```
+
+</CodeGroup>
+
+## Related documentation
+
+- [Create Links](/link/create-link)
+- [Callbacks](/link/callbacks)
+- [Query Overview](/query/overview)
+- [Pagination & Delta Queries](/query/pagination)
+- [Webhooks](/link/webhooks)
+- [Data Wallet](/link/data-wallet)
+
+## Edge cases / gotchas
+
+- `state` must be verified on callback or you risk account linking attacks.
+- Querying before export completion can return empty results; use `export.completed` or backoff retries.
+- If a user revokes consent, stop processing and delete data to stay privacy-first.
+- Never prompt the user to type a `uid` — it must stay server-side.

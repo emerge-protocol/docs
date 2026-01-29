@@ -198,59 +198,67 @@ import express from 'express';
 import crypto from 'crypto';
 
 const app = express();
-app.use(express.json());
+app.use(express.raw({ type: 'application/json' }));
 
 const WEBHOOK_SECRET = process.env.EMERGE_WEBHOOK_SECRET!;
 
 app.post('/webhooks/emerge', async (req, res) => {
-  // 1. Verify signature
-  const signature = req.headers['x-emerge-signature'] as string;
-  const payload = JSON.stringify(req.body);
+  try {
+    // 1. Verify signature (raw body)
+    const signature = req.headers['x-emerge-signature'] as string | undefined;
+    if (!signature) {
+      return res.status(401).send('Missing signature');
+    }
 
-  const expectedSignature = crypto
-    .createHmac('sha256', WEBHOOK_SECRET)
-    .update(payload)
-    .digest('hex');
+    const expectedSignature = crypto
+      .createHmac('sha256', WEBHOOK_SECRET)
+      .update(req.body)
+      .digest('hex');
 
-  if (signature !== expectedSignature) {
-    console.error('Invalid webhook signature');
-    return res.status(401).send('Invalid signature');
+    if (signature !== expectedSignature) {
+      console.error('Invalid webhook signature');
+      return res.status(401).send('Invalid signature');
+    }
+
+    // 2. Handle event
+    const payload = JSON.parse(req.body.toString('utf8'));
+    const { event, data } = payload;
+
+    switch (event) {
+      case 'consent.given':
+        await handleConsentGiven(data);
+        break;
+
+      case 'consent.revoked':
+        await handleConsentRevoked(data);
+        break;
+
+      case 'consent.expiring':
+        await handleConsentExpiring(data);
+        break;
+
+      case 'export.completed':
+        await handleExportCompleted(data);
+        break;
+
+      case 'export.failed':
+        await handleExportFailed(data);
+        break;
+
+      case 'token.needs_reauth':
+        await handleTokenNeedsReauth(data);
+        break;
+
+      default:
+        console.log(`Unknown event: ${event}`);
+    }
+
+    // 3. Acknowledge receipt
+    res.status(200).send('OK');
+  } catch (err) {
+    console.error('Webhook error', err);
+    res.status(500).send('Server error');
   }
-
-  // 2. Handle event
-  const { event, data } = req.body;
-
-  switch (event) {
-    case 'consent.given':
-      await handleConsentGiven(data);
-      break;
-
-    case 'consent.revoked':
-      await handleConsentRevoked(data);
-      break;
-
-    case 'consent.expiring':
-      await handleConsentExpiring(data);
-      break;
-
-    case 'export.completed':
-      await handleExportCompleted(data);
-      break;
-
-    case 'export.failed':
-      await handleExportFailed(data);
-      break;
-
-    case 'token.needs_reauth':
-      await handleTokenNeedsReauth(data);
-      break;
-
-    default:
-      console.log(`Unknown event: ${event}`);
-  }
-
-  // 3. Acknowledge receipt
-  res.status(200).send('OK');
 });
 
 async function handleConsentGiven(data: { uid: string }) {
@@ -308,6 +316,9 @@ WEBHOOK_SECRET = os.environ['EMERGE_WEBHOOK_SECRET']
 async def emerge_webhook(request: Request):
     # 1. Verify signature
     signature = request.headers.get('x-emerge-signature')
+    if not signature:
+        raise HTTPException(status_code=401, detail='Missing signature')
+
     payload = await request.body()
 
     expected_signature = hmac.new(
@@ -316,7 +327,7 @@ async def emerge_webhook(request: Request):
         hashlib.sha256
     ).hexdigest()
 
-    if signature != expected_signature:
+    if not hmac.compare_digest(signature, expected_signature):
         raise HTTPException(status_code=401, detail='Invalid signature')
 
     # 2. Handle event

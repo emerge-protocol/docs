@@ -25,10 +25,14 @@ https://link.emergedata.ai/link/start?client_id=...&redirect_uri=...&state=...&t
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `uid` | string | - | Your user identifier (returned in callback) |
+| `uid` | string | - | Your internal user id (server-side only). If omitted, Emerge generates a pairwise `uid` and returns it on callback. |
 | `flow_config` | string | - | Named configuration for custom branding |
 
 ## Complete implementation
+
+<Warning>
+Do not ask end-users for `uid` or collect it in the frontend. Use your internal user id server-side or omit `uid` and store the generated callback `uid`. This prevents wrong-user data access and keeps identifiers private.
+</Warning>
 
 <CodeGroup>
 
