@@ -22,7 +22,7 @@
           "Link"
         ],
         "summary": "Link Start",
-        "description": "Start Link OAuth flow.\n\nTWO MODES:\n\n1. SESSION-BASED (sid provided):\n   - Requires ONLY: sid\n   - Optional: oauth_complete, flow_version\n   - All other params (client_id, redirect_uri, state, signature, timestamp) are REDUNDANT and IGNORED\n   - Looks up session from database, gets all data from there\n   - Serves frontend with session data\n   - If oauth_complete=true, frontend handles OAuth completion and redirect\n\n2. INITIAL FLOW (no sid):\n   - Requires: client_id, redirect_uri, state, signature, timestamp\n   - Validates HMAC signature for security\n   - Creates new session in database\n   - Serves frontend with new sid\n\nThe sid-based mode eliminates redundant parameters - once a session exists,\neverything is stored in the database and can be retrieved via sid alone.",
+        "description": "Start Link OAuth flow.\n\nTWO MODES:\n\n1. SESSION-BASED (sid provided):\n   - Requires ONLY: sid\n   - Optional: oauth_complete\n   - All other params (client_id, redirect_uri, state, signature, timestamp) are REDUNDANT and IGNORED\n   - Looks up session from database, gets all data from there (including flow_config for default config auto-load)\n   - Serves frontend with session data\n   - If oauth_complete=true, frontend handles OAuth completion and redirect\n\n2. INITIAL FLOW (no sid):\n   - Requires: client_id, redirect_uri, state, signature, timestamp\n   - Validates HMAC signature for security\n   - Creates new session in database (stores flow_config if provided)\n   - Serves frontend with new sid\n\nThe sid-based mode eliminates redundant parameters - once a session exists,\neverything is stored in the database and can be retrieved via sid alone.",
         "operationId": "link_start_link_start_get",
         "parameters": [
           {
@@ -41,7 +41,7 @@
               "description": "Session ID - if provided, all other params except oauth_complete/flow_version are ignored",
               "title": "Sid"
             },
-            "description": "Session ID - if provided, all other params except oauth_complete/flow_version are ignored"
+            "description": "Session ID - if provided, all other params except oauth_complete are ignored"
           },
           {
             "name": "oauth_complete",
@@ -108,7 +108,7 @@
               "description": "Named flow config - mutually exclusive with flow_version",
               "title": "Flow Config"
             },
-            "description": "Named flow config - mutually exclusive with flow_version"
+            "description": "Named flow config - mutually exclusive with flow_version. Stored on the session so Link can auto-load the default config on resume."
           },
           {
             "name": "client_id",
@@ -267,8 +267,8 @@
         "tags": [
           "Link"
         ],
-        "summary": "Create Flow Config",
-        "description": "Create a new flow configuration for the authenticated client.\n\nThis endpoint allows partners to programmatically create flow configurations\nwith custom branding. The logo is fetched from the provided URL, optimized\nfor display (resized to max 400x400 pixels), and stored in S3.\n\nArgs:\n    body: Flow configuration details including company name, logo URL, etc.\n    client_id: Authenticated client ID from JWT token\n\nReturns:\n    Created flow configuration with S3 logo URL and preview link\n\nRaises:\n    400: Invalid request (bad config name, unreachable logo, unsupported image type)\n    409: Config name already exists for this client\n    500: S3 upload failure",
+        "summary": "Upsert Flow Config",
+        "description": "Create or update a flow configuration for the authenticated client.\n\nThis endpoint allows partners to programmatically manage flow configurations\nwith custom branding. The logo is fetched from the provided URL, optimized\nfor display (resized to max 400x400 pixels), and stored in S3.\n\nArgs:\n    body: Flow configuration details including company name, logo URL, etc.\n    client_id: Authenticated client ID from JWT token\n\nReturns:\n    Created or updated flow configuration with S3 logo URL and preview link\n\nRaises:\n    400: Invalid request (bad config name, unreachable logo, unsupported image type)\n    500: S3 upload failure",
         "operationId": "create_flow_config_configs_post",
         "requestBody": {
           "content": {
@@ -287,6 +287,118 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FlowConfigResponse"
+                },
+                "examples": {
+                  "created": {
+                    "summary": "Created flow config",
+                    "value": {
+                      "config_id": "cfg_3f2c8a9d",
+                      "config_name": "default",
+                      "company_name": "Acme Health",
+                      "logo_url": "https://s3.amazonaws.com/emerge-link-assets/acme-health/logo.png",
+                      "privacy_policy_url": "https://acmehealth.com/privacy",
+                      "webhook_url": "https://api.acmehealth.com/webhooks/emerge",
+                      "flow_version": "lm",
+                      "is_default": true,
+                      "preview_url": "https://link.emergedata.ai/preview/default?client_id=client_8e1f2c"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlowConfigResponse"
+                },
+                "examples": {
+                  "upserted": {
+                    "summary": "Updated flow config",
+                    "value": {
+                      "config_id": "cfg_3f2c8a9d",
+                      "config_name": "default",
+                      "company_name": "Acme Health",
+                      "logo_url": "https://s3.amazonaws.com/emerge-link-assets/acme-health/logo.png",
+                      "privacy_policy_url": "https://acmehealth.com/privacy",
+                      "webhook_url": "https://api.acmehealth.com/webhooks/emerge",
+                      "flow_version": "lm",
+                      "is_default": true,
+                      "preview_url": "https://link.emergedata.ai/preview/default?client_id=client_8e1f2c"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-mint": {
+          "server": "https://link.emergedata.ai"
+        }
+      },
+      "get": {
+        "tags": [
+          "Link"
+        ],
+        "summary": "List Flow Configs",
+        "description": "List all flow configurations for the authenticated client.\n\nReturns each config with its S3 logo URL and preview link.",
+        "operationId": "list_flow_configs_configs_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FlowConfigResponse"
+                  }
+                },
+                "examples": {
+                  "configs": {
+                    "summary": "Flow configs",
+                    "value": [
+                      {
+                        "config_id": "cfg_3f2c8a9d",
+                        "config_name": "default",
+                        "company_name": "Acme Health",
+                        "logo_url": "https://s3.amazonaws.com/emerge-link-assets/acme-health/logo.png",
+                        "privacy_policy_url": "https://acmehealth.com/privacy",
+                        "webhook_url": "https://api.acmehealth.com/webhooks/emerge",
+                        "flow_version": "lm",
+                        "is_default": true,
+                        "preview_url": "https://link.emergedata.ai/preview/default?client_id=client_8e1f2c"
+                      },
+                      {
+                        "config_id": "cfg_7b1d4f20",
+                        "config_name": "brand_alt",
+                        "company_name": "Acme Health",
+                        "logo_url": "https://s3.amazonaws.com/emerge-link-assets/acme-health/logo-alt.png",
+                        "privacy_policy_url": "https://acmehealth.com/privacy",
+                        "webhook_url": null,
+                        "flow_version": "lm",
+                        "is_default": false,
+                        "preview_url": "https://link.emergedata.ai/preview/brand_alt?client_id=client_8e1f2c"
+                      }
+                    ]
+                  }
                 }
               }
             }
@@ -463,7 +575,7 @@
           "privacy_policy_url"
         ],
         "title": "CreateFlowConfigRequest",
-        "description": "Request to create a new flow configuration via API."
+        "description": "Request to create or update a flow configuration via API."
       },
       "ExportStatusResponse": {
         "properties": {
@@ -576,7 +688,7 @@
           "preview_url"
         ],
         "title": "FlowConfigResponse",
-        "description": "Response after creating a flow configuration."
+        "description": "Response after creating or updating a flow configuration."
       },
       "HTTPValidationError": {
         "properties": {

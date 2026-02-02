@@ -87,6 +87,10 @@ response = requests.post(
 
 </CodeGroup>
 
+<Note>
+`POST /configs` is an upsert. Reusing the same `config_name` updates the existing config instead of returning a conflict, which makes setup scripts idempotent. Use `GET /configs` to list your configs and preview URLs.
+</Note>
+
 ## Step 2: Generate a signed link
 
 Create an HMAC-signed URL that users click to start the consent flow.

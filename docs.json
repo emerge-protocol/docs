@@ -79,6 +79,17 @@
         ]
       },
       {
+        "tab": "Data Wallet",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "link/data-wallet"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "Link API",
         "groups": [
           {
@@ -96,6 +107,7 @@
             "group": "Endpoints",
             "openapi": "openapi/link.json",
             "pages": [
+              "GET /configs",
               "POST /configs",
               "GET /consent/status/{uid}",
               "GET /export/status/{uid}"
@@ -160,6 +172,16 @@
           "icon": "arrow-up-right-from-square"
         },
         {
+          "anchor": "Data Wallet",
+          "href": "https://wallet.emergedata.ai",
+          "icon": "arrow-up-right-from-square"
+        },
+        {
+          "anchor": "Our site",
+          "href": "https://emergedata.ai",
+          "icon": "arrow-up-right-from-square"
+        },
+        {
           "anchor": "Support",
           "href": "mailto:account@emergedata.ai",
           "icon": "envelope"
@@ -169,6 +191,14 @@
   },
   "navbar": {
     "links": [
+      {
+        "label": "Our site",
+        "href": "https://emergedata.ai"
+      },
+      {
+        "label": "Data Wallet",
+        "href": "https://wallet.emergedata.ai"
+      },
       {
         "label": "Support",
         "href": "mailto:account@emergedata.ai"
