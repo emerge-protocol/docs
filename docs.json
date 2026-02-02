@@ -79,17 +79,6 @@
         ]
       },
       {
-        "tab": "Data Wallet",
-        "groups": [
-          {
-            "group": "Overview",
-            "pages": [
-              "link/data-wallet"
-            ]
-          }
-        ]
-      },
-      {
         "tab": "Link API",
         "groups": [
           {
@@ -159,6 +148,17 @@
               "ai/mcp-setup",
               "ai/contextual-menu",
               "ai/examples"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Data Wallet",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "link/data-wallet"
             ]
           }
         ]
