@@ -316,32 +316,6 @@
                 }
               }
             }
-          },
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FlowConfigResponse"
-                },
-                "examples": {
-                  "upserted": {
-                    "summary": "Updated flow config",
-                    "value": {
-                      "config_id": "cfg_3f2c8a9d",
-                      "config_name": "default",
-                      "company_name": "Acme Health",
-                      "logo_url": "https://s3.amazonaws.com/emerge-link-assets/acme-health/logo.png",
-                      "privacy_policy_url": "https://acmehealth.com/privacy",
-                      "webhook_url": "https://api.acmehealth.com/webhooks/emerge",
-                      "flow_version": "lm",
-                      "is_default": true,
-                      "preview_url": "https://link.emergedata.ai/preview/default?client_id=client_8e1f2c"
-                    }
-                  }
-                }
-              }
-            }
           }
         },
         "security": [
@@ -622,10 +596,6 @@
           }
         },
         "type": "object",
-        "required": [
-          "uid",
-          "data_ready"
-        ],
         "title": "ExportStatusResponse",
         "description": "Response for export data status check."
       },
@@ -676,17 +646,6 @@
           }
         },
         "type": "object",
-        "required": [
-          "config_id",
-          "config_name",
-          "company_name",
-          "logo_url",
-          "privacy_policy_url",
-          "webhook_url",
-          "flow_version",
-          "is_default",
-          "preview_url"
-        ],
         "title": "FlowConfigResponse",
         "description": "Response after creating or updating a flow configuration."
       },
@@ -729,11 +688,6 @@
           }
         },
         "type": "object",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
         "title": "ValidationError"
       }
     },

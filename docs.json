@@ -122,6 +122,7 @@
               "GET /v1/browsing",
               "GET /v1/youtube",
               "GET /v1/ads",
+              "GET /v1/receipts",
               "GET /v1/job/{task_id}",
               "GET /v1/jobs"
             ]
@@ -133,7 +134,8 @@
               "GET /v1/sync/get_search",
               "GET /v1/sync/get_browsing",
               "GET /v1/sync/get_youtube",
-              "GET /v1/sync/get_ads"
+              "GET /v1/sync/get_ads",
+              "GET /v1/sync/get_receipts"
             ]
           }
         ]
