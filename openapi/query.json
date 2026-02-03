@@ -21,8 +21,8 @@
         "tags": [
           "Query Async"
         ],
-        "summary": "Search",
-        "operationId": "search_v1_search_get",
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_search_get",
         "security": [
           {
             "bearerAuth": []
@@ -166,8 +166,8 @@
         "tags": [
           "Query Async"
         ],
-        "summary": "Browsing",
-        "operationId": "browsing_v1_browsing_get",
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_browsing_get",
         "security": [
           {
             "bearerAuth": []
@@ -311,8 +311,8 @@
         "tags": [
           "Query Async"
         ],
-        "summary": "Youtube",
-        "operationId": "youtube_v1_youtube_get",
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_youtube_get",
         "security": [
           {
             "bearerAuth": []
@@ -456,8 +456,153 @@
         "tags": [
           "Query Async"
         ],
-        "summary": "Ads",
-        "operationId": "ads_v1_ads_get",
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_ads_get",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "begin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Begin"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "name": "ingested_begin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ingested Begin"
+            }
+          },
+          {
+            "name": "ingested_end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ingested End"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Users"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateJobResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "server": "https://query.emergedata.ai"
+        }
+      }
+    },
+    "/v1/receipts": {
+      "get": {
+        "tags": [
+          "Query Async"
+        ],
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_receipts_get",
         "security": [
           {
             "bearerAuth": []
@@ -687,7 +832,7 @@
         ],
         "summary": "Get search history (synchronous)",
         "description": "Returns search history data immediately using the api_search mart view.",
-        "operationId": "_inner_v1_sync_get_search_get",
+        "operationId": "endpoint_v1_sync_get_search_get",
         "security": [
           {
             "bearerAuth": []
@@ -845,7 +990,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SearchDataResponse"
+                  "$ref": "#/components/schemas/DataResponse_SearchEvent_"
                 }
               }
             }
@@ -873,7 +1018,7 @@
         ],
         "summary": "Get browsing history (synchronous)",
         "description": "Returns browsing history data immediately using the api_browsing mart view.",
-        "operationId": "_inner_v1_sync_get_browsing_get",
+        "operationId": "endpoint_v1_sync_get_browsing_get",
         "security": [
           {
             "bearerAuth": []
@@ -1031,7 +1176,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BrowsingDataResponse"
+                  "$ref": "#/components/schemas/DataResponse_BrowsingEvent_"
                 }
               }
             }
@@ -1059,7 +1204,7 @@
         ],
         "summary": "Get YouTube activity (synchronous)",
         "description": "Returns YouTube activity data immediately using the api_youtube mart view.",
-        "operationId": "_inner_v1_sync_get_youtube_get",
+        "operationId": "endpoint_v1_sync_get_youtube_get",
         "security": [
           {
             "bearerAuth": []
@@ -1217,7 +1362,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/YouTubeDataResponse"
+                  "$ref": "#/components/schemas/DataResponse_YouTubeEvent_"
                 }
               }
             }
@@ -1245,7 +1390,7 @@
         ],
         "summary": "Get ad impressions (synchronous)",
         "description": "Returns ad impression data immediately using the api_ads mart view.",
-        "operationId": "_inner_v1_sync_get_ads_get",
+        "operationId": "endpoint_v1_sync_get_ads_get",
         "security": [
           {
             "bearerAuth": []
@@ -1403,152 +1548,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdsDataResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "x-mint": {
-          "server": "https://query.emergedata.ai"
-        }
-      }
-    },
-    "/v1/receipts": {
-      "get": {
-        "tags": [
-          "Query Async"
-        ],
-        "summary": "Receipts",
-        "operationId": "receipts_v1_receipts_get",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "begin",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Begin"
-            }
-          },
-          {
-            "name": "end",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "End"
-            }
-          },
-          {
-            "name": "category",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Category"
-            }
-          },
-          {
-            "name": "ingested_begin",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Ingested Begin"
-            }
-          },
-          {
-            "name": "ingested_end",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Ingested End"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "anyOf": [
-                  {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "title": "Users"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CreateJobResponse"
+                  "$ref": "#/components/schemas/DataResponse_AdsEvent_"
                 }
               }
             }
@@ -1576,7 +1576,7 @@
         ],
         "summary": "Get receipts (synchronous)",
         "description": "Returns receipt data immediately using the api_receipts mart view.",
-        "operationId": "_inner_v1_sync_get_receipts_get",
+        "operationId": "endpoint_v1_sync_get_receipts_get",
         "security": [
           {
             "bearerAuth": []
@@ -1734,7 +1734,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ReceiptsDataResponse"
+                  "$ref": "#/components/schemas/DataResponse_ReceiptsEvent_"
                 }
               }
             }
@@ -1758,50 +1758,6 @@
   },
   "components": {
     "schemas": {
-      "AdsDataResponse": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/AdsEvent"
-            },
-            "type": "array",
-            "title": "Data"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Next Cursor"
-          },
-          "has_more": {
-            "type": "boolean",
-            "title": "Has More"
-          },
-          "applied_ingested_end": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Applied Ingested End"
-          }
-        },
-        "type": "object",
-        "title": "AdsDataResponse"
-      },
       "AdsEvent": {
         "properties": {
           "user_id": {
@@ -1904,51 +1860,20 @@
           }
         },
         "type": "object",
+        "required": [
+          "user_id",
+          "event_id",
+          "timestamp",
+          "ingested_at",
+          "source_domain",
+          "landing_domain",
+          "url",
+          "title",
+          "category",
+          "brands",
+          "ad_network"
+        ],
         "title": "AdsEvent"
-      },
-      "BrowsingDataResponse": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/BrowsingEvent"
-            },
-            "type": "array",
-            "title": "Data"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Next Cursor"
-          },
-          "has_more": {
-            "type": "boolean",
-            "title": "Has More"
-          },
-          "applied_ingested_end": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Applied Ingested End"
-          }
-        },
-        "type": "object",
-        "title": "BrowsingDataResponse"
       },
       "BrowsingEvent": {
         "properties": {
@@ -2023,6 +1948,17 @@
           }
         },
         "type": "object",
+        "required": [
+          "user_id",
+          "event_id",
+          "timestamp",
+          "ingested_at",
+          "url",
+          "title",
+          "page_category",
+          "category",
+          "brands"
+        ],
         "title": "BrowsingEvent"
       },
       "CreateJobResponse": {
@@ -2036,7 +1972,256 @@
           }
         },
         "type": "object",
+        "required": [
+          "job_id",
+          "status"
+        ],
         "title": "CreateJobResponse"
+      },
+      "DataResponse_AdsEvent_": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AdsEvent"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "default": false
+          },
+          "applied_ingested_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applied Ingested End"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "DataResponse[AdsEvent]"
+      },
+      "DataResponse_BrowsingEvent_": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/BrowsingEvent"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "default": false
+          },
+          "applied_ingested_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applied Ingested End"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "DataResponse[BrowsingEvent]"
+      },
+      "DataResponse_ReceiptsEvent_": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ReceiptsEvent"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "default": false
+          },
+          "applied_ingested_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applied Ingested End"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "DataResponse[ReceiptsEvent]"
+      },
+      "DataResponse_SearchEvent_": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/SearchEvent"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "default": false
+          },
+          "applied_ingested_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applied Ingested End"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "DataResponse[SearchEvent]"
+      },
+      "DataResponse_YouTubeEvent_": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/YouTubeEvent"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "default": false
+          },
+          "applied_ingested_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applied Ingested End"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "DataResponse[YouTubeEvent]"
       },
       "HTTPValidationError": {
         "properties": {
@@ -2101,22 +2286,16 @@
           }
         },
         "type": "object",
+        "required": [
+          "task_id",
+          "status",
+          "created_at"
+        ],
         "title": "QueryJob"
       },
-      "SearchDataResponse": {
+      "ReceiptItem": {
         "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/SearchEvent"
-            },
-            "type": "array",
-            "title": "Data"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          },
-          "next_cursor": {
+          "name": {
             "anyOf": [
               {
                 "type": "string"
@@ -2125,27 +2304,175 @@
                 "type": "null"
               }
             ],
-            "title": "Next Cursor"
+            "title": "Name"
           },
-          "has_more": {
-            "type": "boolean",
-            "title": "Has More"
-          },
-          "applied_ingested_end": {
+          "quantity": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "date-time"
+                "type": "integer"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Applied Ingested End"
+            "title": "Quantity"
+          },
+          "unit_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Price"
+          },
+          "brand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
           }
         },
         "type": "object",
-        "title": "SearchDataResponse"
+        "required": [
+          "name",
+          "quantity",
+          "unit_price",
+          "brand",
+          "category"
+        ],
+        "title": "ReceiptItem"
+      },
+      "ReceiptsEvent": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "event_id": {
+            "type": "integer",
+            "title": "Event Id"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "ingested_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ingested At"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          },
+          "retailer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retailer Name"
+          },
+          "receipt_currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receipt Currency"
+          },
+          "total_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Value"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReceiptItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "brands": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Brands"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "event_id",
+          "timestamp",
+          "ingested_at",
+          "subject",
+          "retailer_name",
+          "receipt_currency",
+          "total_value",
+          "items",
+          "category",
+          "brands"
+        ],
+        "title": "ReceiptsEvent"
       },
       "SearchEvent": {
         "properties": {
@@ -2231,6 +2558,18 @@
           }
         },
         "type": "object",
+        "required": [
+          "user_id",
+          "event_id",
+          "timestamp",
+          "ingested_at",
+          "url",
+          "title",
+          "query",
+          "intent",
+          "category",
+          "brands"
+        ],
         "title": "SearchEvent"
       },
       "ValidationError": {
@@ -2259,51 +2598,12 @@
           }
         },
         "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
         "title": "ValidationError"
-      },
-      "YouTubeDataResponse": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/YouTubeEvent"
-            },
-            "type": "array",
-            "title": "Data"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Next Cursor"
-          },
-          "has_more": {
-            "type": "boolean",
-            "title": "Has More"
-          },
-          "applied_ingested_end": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Applied Ingested End"
-          }
-        },
-        "type": "object",
-        "title": "YouTubeDataResponse"
       },
       "YouTubeEvent": {
         "properties": {
@@ -2367,212 +2667,17 @@
           }
         },
         "type": "object",
+        "required": [
+          "user_id",
+          "event_id",
+          "timestamp",
+          "ingested_at",
+          "url",
+          "title",
+          "category",
+          "brands"
+        ],
         "title": "YouTubeEvent"
-      },
-      "ReceiptItem": {
-        "properties": {
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "quantity": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Quantity"
-          },
-          "unit_price": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Unit Price"
-          },
-          "brand": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Brand"
-          },
-          "category": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Category"
-          }
-        },
-        "type": "object",
-        "title": "ReceiptItem"
-      },
-      "ReceiptsEvent": {
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "title": "User Id"
-          },
-          "event_id": {
-            "type": "integer",
-            "title": "Event Id"
-          },
-          "timestamp": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Timestamp"
-          },
-          "ingested_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Ingested At"
-          },
-          "subject": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Subject"
-          },
-          "retailer_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Retailer Name"
-          },
-          "receipt_currency": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Receipt Currency"
-          },
-          "total_value": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Total Value"
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ReceiptItem"
-            },
-            "title": "Items"
-          },
-          "category": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Category"
-          },
-          "brands": {
-            "type": "array",
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "title": "Brands"
-          }
-        },
-        "type": "object",
-        "title": "ReceiptsEvent"
-      },
-      "ReceiptsDataResponse": {
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ReceiptsEvent"
-            },
-            "title": "Data"
-          },
-          "count": {
-            "type": "integer",
-            "title": "Count"
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Next Cursor"
-          },
-          "has_more": {
-            "type": "boolean",
-            "title": "Has More"
-          },
-          "applied_ingested_end": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Applied Ingested End"
-          }
-        },
-        "type": "object",
-        "title": "ReceiptsDataResponse"
       }
     },
     "securitySchemes": {
