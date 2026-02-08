@@ -148,7 +148,19 @@
             "pages": [
               "ai/overview",
               "ai/mcp-setup",
-              "ai/contextual-menu",
+              "ai/contextual-menu"
+            ]
+          },
+          {
+            "group": "MCP Server",
+            "pages": [
+              "ai/mcp-server",
+              "ai/mcp-tools"
+            ]
+          },
+          {
+            "group": "Examples",
+            "pages": [
               "ai/examples"
             ]
           }
