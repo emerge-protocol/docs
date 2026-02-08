@@ -1,0 +1,421 @@
+---
+title: "MCP Tools Reference"
+description: "Complete reference for all MCP server tools"
+---
+
+<Note>
+These tools are wrappers around Query API sync endpoints.
+For HTTP access, see [Query API Sync Endpoints](/query/overview#sync-endpoints).
+</Note>
+
+## Overview
+
+The MCP server exposes 5 tools that map 1:1 to Query API sync endpoints:
+
+| MCP Tool | Query API Endpoint |
+|----------|-------------------|
+| `get_search_data` | `/v1/sync/get_search` |
+| `get_youtube_data` | `/v1/sync/get_youtube` |
+| `get_browsing_data` | `/v1/sync/get_browsing` |
+| `get_ads_data` | `/v1/sync/get_ads` |
+| `get_receipts_data` | `/v1/sync/get_receipts` |
+
+All tools share the same parameter structure and response format:
+- **Authentication**: Uses session credentials or explicit `auth_token` + `uid`
+- **Time filters**: ISO 8601 timestamps for `begin`, `end`, `ingested_begin`, `ingested_end`
+- **Category filtering**: Slash-delimited paths (e.g., `/Shopping/Electronics`)
+- **Pagination**: Cursor-based with `limit` (max 100M) and `next_cursor`
+
+---
+
+## get_search_data
+
+Get search history data from Emerge Atlas Query API. Returns search events with optional filters for time range, category, and pagination.
+
+**Query API Endpoint**: `/v1/sync/get_search`
+
+### Parameters
+
+<ParamField path="auth_token" type="string" optional>
+  Bearer token for authentication with Query API. Optional - uses session credentials if not provided.
+</ParamField>
+
+<ParamField path="uid" type="string" optional>
+  User reference ID (e.g., alice@yourcompany.com). Optional - uses session credentials if not provided.
+</ParamField>
+
+<ParamField path="begin" type="string" optional>
+  Filter by event timestamp (start) in ISO 8601 format
+</ParamField>
+
+<ParamField path="end" type="string" optional>
+  Filter by event timestamp (end) in ISO 8601 format
+</ParamField>
+
+<ParamField path="ingested_begin" type="string" optional>
+  Filter by ingestion timestamp (start) in ISO 8601 format
+</ParamField>
+
+<ParamField path="ingested_end" type="string" optional>
+  Filter by ingestion timestamp (end) in ISO 8601 format
+</ParamField>
+
+<ParamField path="category" type="string" optional>
+  Category subtree to filter by (e.g., /Shopping, /Finance/Investing)
+</ParamField>
+
+<ParamField path="limit" type="number" optional>
+  Maximum number of rows to return (default 1000, max 100000000)
+</ParamField>
+
+<ParamField path="cursor" type="string" optional>
+  Pagination cursor from previous response
+</ParamField>
+
+### Example Request
+
+```typescript
+// Using MCP protocol
+const result = await use_mcp_tool({
+  tool: "get_search_data",
+  arguments: {
+    begin: "2024-01-01T00:00:00Z",
+    end: "2024-01-31T23:59:59Z",
+    limit: 100
+  }
+});
+```
+
+### See Also
+
+- [Query API: /v1/sync/get_search](/query/overview#sync-endpoints)
+- [Pagination Guide](/query/pagination)
+
+---
+
+## get_youtube_data
+
+Get YouTube watch history from Emerge Atlas Query API. Returns YouTube video watch events with optional filters for time range, category, and pagination.
+
+**Query API Endpoint**: `/v1/sync/get_youtube`
+
+### Parameters
+
+<ParamField path="auth_token" type="string" optional>
+  Bearer token for authentication with Query API. Optional - uses session credentials if not provided.
+</ParamField>
+
+<ParamField path="uid" type="string" optional>
+  User reference ID (e.g., alice@yourcompany.com). Optional - uses session credentials if not provided.
+</ParamField>
+
+<ParamField path="begin" type="string" optional>
+  Filter by event timestamp (start) in ISO 8601 format
+</ParamField>
+
+<ParamField path="end" type="string" optional>
+  Filter by event timestamp (end) in ISO 8601 format
+</ParamField>
+
+<ParamField path="ingested_begin" type="string" optional>
+  Filter by ingestion timestamp (start) in ISO 8601 format
+</ParamField>
+
+<ParamField path="ingested_end" type="string" optional>
+  Filter by ingestion timestamp (end) in ISO 8601 format
+</ParamField>
+
+<ParamField path="category" type="string" optional>
+  Category subtree to filter by (e.g., /Shopping, /Finance/Investing)
+</ParamField>
+
+<ParamField path="limit" type="number" optional>
+  Maximum number of rows to return (default 1000, max 100000000)
+</ParamField>
+
+<ParamField path="cursor" type="string" optional>
+  Pagination cursor from previous response
+</ParamField>
+
+### Example Request
+
+```typescript
+// Using MCP protocol
+const result = await use_mcp_tool({
+  tool: "get_youtube_data",
+  arguments: {
+    begin: "2024-01-01T00:00:00Z",
+    end: "2024-01-31T23:59:59Z",
+    limit: 100
+  }
+});
+```
+
+### See Also
+
+- [Query API: /v1/sync/get_youtube](/query/overview#sync-endpoints)
+- [Pagination Guide](/query/pagination)
+
+---
+
+## get_browsing_data
+
+Get web browsing history from Emerge Atlas Query API. Returns browsing events with optional filters for time range, category, and pagination.
+
+**Query API Endpoint**: `/v1/sync/get_browsing`
+
+### Parameters
+
+<ParamField path="auth_token" type="string" optional>
+  Bearer token for authentication with Query API. Optional - uses session credentials if not provided.
+</ParamField>
+
+<ParamField path="uid" type="string" optional>
+  User reference ID (e.g., alice@yourcompany.com). Optional - uses session credentials if not provided.
+</ParamField>
+
+<ParamField path="begin" type="string" optional>
+  Filter by event timestamp (start) in ISO 8601 format
+</ParamField>
+
+<ParamField path="end" type="string" optional>
+  Filter by event timestamp (end) in ISO 8601 format
+</ParamField>
+
+<ParamField path="ingested_begin" type="string" optional>
+  Filter by ingestion timestamp (start) in ISO 8601 format
+</ParamField>
+
+<ParamField path="ingested_end" type="string" optional>
+  Filter by ingestion timestamp (end) in ISO 8601 format
+</ParamField>
+
+<ParamField path="category" type="string" optional>
+  Category subtree to filter by (e.g., /Shopping, /Finance/Investing)
+</ParamField>
+
+<ParamField path="limit" type="number" optional>
+  Maximum number of rows to return (default 1000, max 100000000)
+</ParamField>
+
+<ParamField path="cursor" type="string" optional>
+  Pagination cursor from previous response
+</ParamField>
+
+### Example Request
+
+```typescript
+// Using MCP protocol
+const result = await use_mcp_tool({
+  tool: "get_browsing_data",
+  arguments: {
+    begin: "2024-01-01T00:00:00Z",
+    end: "2024-01-31T23:59:59Z",
+    limit: 100
+  }
+});
+```
+
+### See Also
+
+- [Query API: /v1/sync/get_browsing](/query/overview#sync-endpoints)
+- [Pagination Guide](/query/pagination)
+
+---
+
+## get_ads_data
+
+Get ad interaction data from Emerge Atlas Query API. Returns ad click and view events with optional filters for time range, category, and pagination.
+
+**Query API Endpoint**: `/v1/sync/get_ads`
+
+### Parameters
+
+<ParamField path="auth_token" type="string" optional>
+  Bearer token for authentication with Query API. Optional - uses session credentials if not provided.
+</ParamField>
+
+<ParamField path="uid" type="string" optional>
+  User reference ID (e.g., alice@yourcompany.com). Optional - uses session credentials if not provided.
+</ParamField>
+
+<ParamField path="begin" type="string" optional>
+  Filter by event timestamp (start) in ISO 8601 format
+</ParamField>
+
+<ParamField path="end" type="string" optional>
+  Filter by event timestamp (end) in ISO 8601 format
+</ParamField>
+
+<ParamField path="ingested_begin" type="string" optional>
+  Filter by ingestion timestamp (start) in ISO 8601 format
+</ParamField>
+
+<ParamField path="ingested_end" type="string" optional>
+  Filter by ingestion timestamp (end) in ISO 8601 format
+</ParamField>
+
+<ParamField path="category" type="string" optional>
+  Category subtree to filter by (e.g., /Shopping, /Finance/Investing)
+</ParamField>
+
+<ParamField path="limit" type="number" optional>
+  Maximum number of rows to return (default 1000, max 100000000)
+</ParamField>
+
+<ParamField path="cursor" type="string" optional>
+  Pagination cursor from previous response
+</ParamField>
+
+### Example Request
+
+```typescript
+// Using MCP protocol
+const result = await use_mcp_tool({
+  tool: "get_ads_data",
+  arguments: {
+    begin: "2024-01-01T00:00:00Z",
+    end: "2024-01-31T23:59:59Z",
+    limit: 100
+  }
+});
+```
+
+### See Also
+
+- [Query API: /v1/sync/get_ads](/query/overview#sync-endpoints)
+- [Pagination Guide](/query/pagination)
+
+---
+
+## get_receipts_data
+
+Get receipt data from Emerge Atlas Query API. Returns purchase receipt events with optional filters for time range, category, and pagination.
+
+**Query API Endpoint**: `/v1/sync/get_receipts`
+
+### Parameters
+
+<ParamField path="auth_token" type="string" optional>
+  Bearer token for authentication with Query API. Optional - uses session credentials if not provided.
+</ParamField>
+
+<ParamField path="uid" type="string" optional>
+  User reference ID (e.g., alice@yourcompany.com). Optional - uses session credentials if not provided.
+</ParamField>
+
+<ParamField path="begin" type="string" optional>
+  Filter by event timestamp (start) in ISO 8601 format
+</ParamField>
+
+<ParamField path="end" type="string" optional>
+  Filter by event timestamp (end) in ISO 8601 format
+</ParamField>
+
+<ParamField path="ingested_begin" type="string" optional>
+  Filter by ingestion timestamp (start) in ISO 8601 format
+</ParamField>
+
+<ParamField path="ingested_end" type="string" optional>
+  Filter by ingestion timestamp (end) in ISO 8601 format
+</ParamField>
+
+<ParamField path="category" type="string" optional>
+  Category subtree to filter by (e.g., /Shopping, /Finance/Investing)
+</ParamField>
+
+<ParamField path="limit" type="number" optional>
+  Maximum number of rows to return (default 1000, max 100000000)
+</ParamField>
+
+<ParamField path="cursor" type="string" optional>
+  Pagination cursor from previous response
+</ParamField>
+
+### Example Request
+
+```typescript
+// Using MCP protocol
+const result = await use_mcp_tool({
+  tool: "get_receipts_data",
+  arguments: {
+    begin: "2024-01-01T00:00:00Z",
+    end: "2024-01-31T23:59:59Z",
+    limit: 100
+  }
+});
+```
+
+### See Also
+
+- [Query API: /v1/sync/get_receipts](/query/overview#sync-endpoints)
+- [Pagination Guide](/query/pagination)
+
+## Response Format
+
+All tools return the same response structure:
+
+```json
+{
+  "success": true,
+  "count": 10,
+  "has_more": true,
+  "next_cursor": "eyJsYXN0X2V2ZW50X2lkIjoxMjM0NX0=",
+  "applied_ingested_end": "2024-01-15T10:30:00Z",
+  "data": [
+    // ... event objects
+  ]
+}
+```
+
+<ParamField path="success" type="boolean">
+  Whether the request succeeded
+</ParamField>
+
+<ParamField path="count" type="number">
+  Number of events returned in this response
+</ParamField>
+
+<ParamField path="has_more" type="boolean">
+  Whether more results are available
+</ParamField>
+
+<ParamField path="next_cursor" type="string" optional>
+  Cursor for pagination. Pass this to `cursor` parameter for next page.
+</ParamField>
+
+<ParamField path="applied_ingested_end" type="string">
+  Actual ingestion timestamp used for filtering (ISO 8601)
+</ParamField>
+
+<ParamField path="data" type="array">
+  Array of event objects. Schema varies by tool.
+</ParamField>
+
+## Error Handling
+
+When a tool call fails, it returns:
+
+```json
+{
+  "isError": true,
+  "content": [
+    {
+      "type": "text",
+      "text": "Error message with details"
+    }
+  ]
+}
+```
+
+Common error scenarios:
+- **401 Unauthorized**: Invalid or missing authentication credentials
+- **400 Bad Request**: Invalid parameters (e.g., malformed timestamp)
+- **500 Internal Server Error**: Query API or database error
+
+## Related Documentation
+
+- [Query API Overview](/query/overview) - HTTP API documentation
+- [Pagination Guide](/query/pagination) - Cursor-based pagination patterns
+- [MCP Server Setup](/ai/mcp-setup) - Connection configuration
+- [MCP Server Architecture](/ai/mcp-server) - High-level overview
