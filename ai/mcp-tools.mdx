@@ -384,8 +384,8 @@ All tools return the same response structure:
   Cursor for pagination. Pass this to `cursor` parameter for next page.
 </ParamField>
 
-<ParamField path="applied_ingested_end" type="string">
-  Actual ingestion timestamp used for filtering (ISO 8601)
+<ParamField path="applied_ingested_end" type="string" optional>
+  Actual ingestion timestamp used for filtering (ISO 8601). May be `null` when no ingestion-end bound is applied.
 </ParamField>
 
 <ParamField path="data" type="array">
