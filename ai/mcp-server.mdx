@@ -37,7 +37,7 @@ The MCP server is a **thin wrapper** around Query API sync endpoints. For direct
 - **Session Management**: Provide credentials once on connection, not per request
 - **Native AI Support**: Works out-of-the-box with Claude, Cursor, VS Code
 - **Type Safety**: Structured tool calling with validated parameters
-- **Same Data**: Identical responses to Query API sync endpoints
+- **Same Data**: Returns Query API sync endpoint data in MCP response format
 
 ## Deployment
 
@@ -80,16 +80,16 @@ Contact your Emerge integration team to obtain credentials.
 Choose your platform:
 
 <CardGroup cols={2}>
-  <Card title="Claude Code" icon="code" href="/ai/mcp-setup#claude-code">
+  <Card title="Claude Code" icon="code" href="/ai/mcp-setup">
     Command-line AI agent
   </Card>
-  <Card title="Claude Desktop" icon="desktop" href="/ai/mcp-setup#claude-desktop">
+  <Card title="Claude Desktop" icon="desktop" href="/ai/mcp-setup">
     Desktop application
   </Card>
-  <Card title="Cursor" icon="cursor" href="/ai/mcp-setup#cursor">
+  <Card title="Cursor" icon="cursor" href="/ai/mcp-setup">
     AI-powered code editor
   </Card>
-  <Card title="VS Code" icon="code" href="/ai/mcp-setup#vs-code">
+  <Card title="VS Code" icon="code" href="/ai/mcp-setup">
     Visual Studio Code extension
   </Card>
 </CardGroup>
@@ -259,7 +259,7 @@ The MCP server inherits rate limits from the Query API:
 - **Data**: 10,000 events per request (recommended limit: 1000)
 - **Concurrent**: 10 concurrent connections per organization
 
-See [Query API Overview](/query/overview#rate-limits) for details.
+See [Query API Overview](/query/overview) for details.
 
 ## Source Code
 
