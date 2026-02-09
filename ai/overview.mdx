@@ -95,7 +95,37 @@ Add the MCP server to your tool in one step:
   </Tab>
 </Tabs>
 
-See [MCP Setup](/ai/mcp-setup) for detailed instructions for all tools.
+See [MCP Docs Setup](/ai/mcp-docs-setup) for detailed instructions for all tools.
+
+## Two MCP Servers
+
+Emerge provides two separate MCP servers for different purposes:
+
+<CardGroup cols={2}>
+  <Card title="Docs MCP Server" icon="book" href="/ai/mcp-docs-setup">
+    **Search and query this documentation**
+
+    - Semantic documentation search
+    - API reference lookup
+    - Code example retrieval
+    - Best for: Learning the API, troubleshooting
+  </Card>
+  <Card title="Query API MCP Server" icon="database" href="/ai/mcp-query-setup">
+    **Query consented user data via AI tools**
+
+    - Search history, browsing, YouTube
+    - Session-based credentials
+    - Direct data access for AI agents
+    - Best for: Building AI applications with user data
+  </Card>
+</CardGroup>
+
+| Server | Purpose | URL |
+|--------|---------|-----|
+| **Docs MCP** | Search documentation | `https://docs.emergedata.ai/mcp` |
+| **Query API MCP** | Query user data | `https://mcp.emergedata.ai/mcp` |
+
+Both servers use the same Model Context Protocol, but serve completely different use cases.
 
 ## One-shot prompt for app builders
 

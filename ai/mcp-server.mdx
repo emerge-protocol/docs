@@ -13,13 +13,10 @@ The MCP server is a **thin wrapper** around Query API sync endpoints. For direct
 
 ## Architecture
 
-```
-┌─────────────┐      MCP Protocol       ┌──────────────┐      HTTP/JSON      ┌──────────────┐
-│  AI Agent   │────────────────────────▶│  MCP Server  │────────────────────▶│  Query API   │
-│             │  (session credentials)  │              │  (Bearer token)     │              │
-│ Claude Code │                         │   NestJS     │                     │   FastAPI    │
-│   Cursor    │                         │ StreamableHTTP│                     │  ClickHouse  │
-└─────────────┘                         └──────────────┘                     └──────────────┘
+```mermaid
+graph LR
+    A[AI Agent<br/>Claude Code, Cursor] -->|MCP Protocol<br/>session credentials| B[MCP Server<br/>NestJS<br/>StreamableHTTP]
+    B -->|HTTP/JSON<br/>Bearer token| C[Query API<br/>FastAPI<br/>ClickHouse]
 ```
 
 ### What's Different from Direct Query API
@@ -39,17 +36,11 @@ The MCP server is a **thin wrapper** around Query API sync endpoints. For direct
 - **Type Safety**: Structured tool calling with validated parameters
 - **Same Data**: Returns Query API sync endpoint data in MCP response format
 
-## Deployment
+## MCP Server URL
 
-### Staging
-- **URL**: `https://mcp.staging.emergedata.ai`
-- **Purpose**: Testing and development
-- **Data**: Test users only
+**Production**: `https://mcp.emergedata.ai/mcp`
 
-### Production
-- **URL**: `https://mcp.emergedata.ai`
-- **Purpose**: Production applications
-- **Data**: Real user data
+This URL serves all production Query API MCP requests.
 
 ## Available Tools
 
@@ -77,24 +68,45 @@ Contact your Emerge integration team to obtain credentials.
 
 ### 2. Configure Your AI Tool
 
-Choose your platform:
+Add the MCP server URL with credentials to your AI tool configuration:
 
-<CardGroup cols={2}>
-  <Card title="Claude Code" icon="code" href="/ai/mcp-setup">
-    Command-line AI agent
-  </Card>
-  <Card title="Claude Desktop" icon="desktop" href="/ai/mcp-setup">
-    Desktop application
-  </Card>
-  <Card title="Cursor" icon="cursor" href="/ai/mcp-setup">
-    AI-powered code editor
-  </Card>
-  <Card title="VS Code" icon="code" href="/ai/mcp-setup">
-    Visual Studio Code extension
-  </Card>
-</CardGroup>
-
-See [MCP Setup Guide](/ai/mcp-setup) for detailed configuration instructions.
+<Tabs>
+  <Tab title="Claude Code">
+    ```bash
+    claude mcp add emerge-query "https://mcp.emergedata.ai/mcp?auth_token=YOUR_TOKEN&uid=YOUR_UID"
+    ```
+  </Tab>
+  <Tab title="Claude Desktop">
+    1. Go to **Settings** → **Connectors**
+    2. Click **Add custom connector**
+    3. URL: `https://mcp.emergedata.ai/mcp?auth_token=YOUR_TOKEN&uid=YOUR_UID`
+  </Tab>
+  <Tab title="Cursor">
+    Create `.cursor/mcp.json`:
+    ```json
+    {
+      "mcpServers": {
+        "Emerge Query": {
+          "url": "https://mcp.emergedata.ai/mcp?auth_token=YOUR_TOKEN&uid=YOUR_UID"
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="VS Code">
+    Create `.vscode/mcp.json`:
+    ```json
+    {
+      "servers": {
+        "Emerge Query": {
+          "type": "http",
+          "url": "https://mcp.emergedata.ai/mcp?auth_token=YOUR_TOKEN&uid=YOUR_UID"
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
 
 ### 3. Verify Connection
 
