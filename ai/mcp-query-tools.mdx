@@ -27,7 +27,7 @@ Retrieve user search history (Google searches).
 | `cursor` | string | No | Pagination cursor from previous response |
 | `limit` | number | No | Max results per request (default 1000, max 100000000) |
 
-*\*Either provide in tool call or use session credentials from connection*
+*Either provide in tool call or use session credentials from connection*
 
 ### Response Format
 
@@ -40,19 +40,27 @@ Retrieve user search history (Google searches).
   "applied_ingested_end": "2024-01-15T10:30:00Z",
   "data": [
     {
-      "event_id": "evt_abc123",
+      "event_id": 12345,
+      "user_id": "user@example.com",
       "query": "best restaurants nearby",
+      "title": "best restaurants nearby - Google Search",
+      "url": "https://www.google.com/search?q=best+restaurants+nearby",
       "timestamp": "2024-01-15T10:30:00Z",
-      "source": "google",
       "category": "/Food/Restaurants",
+      "intent": "find",
+      "brands": ["Google"],
       "ingested_at": "2024-01-15T11:00:00Z"
     },
     {
-      "event_id": "evt_def456",
+      "event_id": 12346,
+      "user_id": "user@example.com",
       "query": "laptop deals",
+      "title": "laptop deals - Google Search",
+      "url": "https://www.google.com/search?q=laptop+deals",
       "timestamp": "2024-01-15T14:20:00Z",
-      "source": "google",
       "category": "/Shopping/Electronics",
+      "intent": "buy",
+      "brands": ["Google"],
       "ingested_at": "2024-01-15T14:25:00Z"
     }
   ]
@@ -96,7 +104,7 @@ Retrieve user YouTube watch history and interactions.
 | `cursor` | string | No | Pagination cursor |
 | `limit` | number | No | Max results per request |
 
-*\*Either provide in tool call or use session credentials from connection*
+*Either provide in tool call or use session credentials from connection*
 
 ### Response Format
 
@@ -109,12 +117,13 @@ Retrieve user YouTube watch history and interactions.
   "applied_ingested_end": "2024-01-15T10:30:00Z",
   "data": [
     {
-      "event_id": "evt_yt_123",
-      "video_id": "dQw4w9WgXcQ",
-      "video_title": "Example Video Title",
-      "channel_name": "Example Channel",
+      "event_id": 67890,
+      "user_id": "user@example.com",
+      "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "title": "Example Video Title",
       "timestamp": "2024-01-15T10:30:00Z",
       "category": "/Entertainment/Music",
+      "brands": ["YouTube"],
       "ingested_at": "2024-01-15T11:00:00Z"
     }
   ]
@@ -156,7 +165,7 @@ Retrieve user web browsing history (Chrome).
 | `cursor` | string | No | Pagination cursor |
 | `limit` | number | No | Max results per request |
 
-*\*Either provide in tool call or use session credentials from connection*
+*Either provide in tool call or use session credentials from connection*
 
 ### Response Format
 
@@ -169,11 +178,14 @@ Retrieve user web browsing history (Chrome).
   "applied_ingested_end": "2024-01-15T10:30:00Z",
   "data": [
     {
-      "event_id": "evt_browse_789",
+      "event_id": 45678,
+      "user_id": "user@example.com",
       "url": "https://example.com/product",
       "title": "Product Page - Example Store",
       "timestamp": "2024-01-15T10:30:00Z",
       "category": "/Shopping",
+      "page_category": "/Shopping/Electronics",
+      "brands": ["Example Store"],
       "ingested_at": "2024-01-15T11:00:00Z"
     }
   ]
@@ -216,7 +228,7 @@ Retrieve user ad interactions (clicks and views).
 | `cursor` | string | No | Pagination cursor |
 | `limit` | number | No | Max results per request |
 
-*\*Either provide in tool call or use session credentials from connection*
+*Either provide in tool call or use session credentials from connection*
 
 ### Response Format
 
@@ -229,12 +241,16 @@ Retrieve user ad interactions (clicks and views).
   "applied_ingested_end": "2024-01-15T10:30:00Z",
   "data": [
     {
-      "event_id": "evt_ad_456",
-      "ad_id": "ad_abc123",
-      "interaction_type": "click",
-      "advertiser": "Example Brand",
+      "event_id": 23456,
+      "user_id": "user@example.com",
+      "url": "https://ads.example.com/click?id=abc123",
+      "title": "Shop Electronics - Example Brand",
+      "source_domain": "news.example.com",
+      "landing_domain": "shop.examplebrand.com",
+      "ad_network": "Google Ads",
       "timestamp": "2024-01-15T10:30:00Z",
       "category": "/Shopping/Electronics",
+      "brands": ["Example Brand"],
       "ingested_at": "2024-01-15T11:00:00Z"
     }
   ]
@@ -276,7 +292,7 @@ Retrieve user purchase receipts (email receipts).
 | `cursor` | string | No | Pagination cursor |
 | `limit` | number | No | Max results per request |
 
-*\*Either provide in tool call or use session credentials from connection*
+*Either provide in tool call or use session credentials from connection*
 
 ### Response Format
 
@@ -289,12 +305,16 @@ Retrieve user purchase receipts (email receipts).
   "applied_ingested_end": "2024-01-15T10:30:00Z",
   "data": [
     {
-      "event_id": "evt_receipt_999",
-      "merchant": "Example Store",
-      "amount": 49.99,
-      "currency": "USD",
+      "event_id": 98765,
+      "user_id": "user@example.com",
+      "retailer_name": "Example Store",
+      "total_value": 49.99,
+      "receipt_currency": "USD",
+      "subject": "Purchase Receipt - Example Store",
       "timestamp": "2024-01-15T10:30:00Z",
       "category": "/Shopping/Retail",
+      "brands": ["Example Store"],
+      "items": [],
       "ingested_at": "2024-01-15T11:00:00Z"
     }
   ]
