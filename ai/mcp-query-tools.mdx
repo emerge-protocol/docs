@@ -1,0 +1,448 @@
+---
+title: "MCP Query Tools Reference"
+description: "Detailed reference for all Query API MCP tools"
+---
+
+The Query API MCP server provides 5 tools for querying consented user data. Each tool maps 1:1 to a Query API sync endpoint.
+
+<Note>
+Tools use **session credentials** by default (provided during connection). You can override per-tool by passing `auth_token` and `uid` parameters.
+</Note>
+
+## Tool: get_search_data
+
+Retrieve user search history (Google searches).
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `auth_token` | string | No* | API token (overrides session) |
+| `uid` | string | No* | User identifier (overrides session) |
+| `begin` | string | No | Start time filter (ISO 8601) |
+| `end` | string | No | End time filter (ISO 8601) |
+| `ingested_begin` | string | No | Ingestion start (for delta queries) |
+| `ingested_end` | string | No | Ingestion end (for delta queries) |
+| `category` | string | No | Filter by category (e.g., "/Shopping") |
+| `cursor` | string | No | Pagination cursor from previous response |
+| `limit` | number | No | Max results per request (default 1000, max 100000000) |
+
+*\*Either provide in tool call or use session credentials from connection*
+
+### Response Format
+
+```json
+{
+  "success": true,
+  "count": 2,
+  "has_more": true,
+  "next_cursor": "eyJsYXN0X2V2ZW50X2lkIjoxMjM0NX0=",
+  "applied_ingested_end": "2024-01-15T10:30:00Z",
+  "data": [
+    {
+      "event_id": "evt_abc123",
+      "query": "best restaurants nearby",
+      "timestamp": "2024-01-15T10:30:00Z",
+      "source": "google",
+      "category": "/Food/Restaurants",
+      "ingested_at": "2024-01-15T11:00:00Z"
+    },
+    {
+      "event_id": "evt_def456",
+      "query": "laptop deals",
+      "timestamp": "2024-01-15T14:20:00Z",
+      "source": "google",
+      "category": "/Shopping/Electronics",
+      "ingested_at": "2024-01-15T14:25:00Z"
+    }
+  ]
+}
+```
+
+### Example Usage
+
+<CodeGroup>
+```text Claude
+"Get search history from January 1-15, 2024, filtered by Shopping category"
+```
+
+```text Cursor
+Agent uses: get_search_data({
+  "begin": "2024-01-01T00:00:00Z",
+  "end": "2024-01-15T23:59:59Z",
+  "category": "/Shopping",
+  "limit": 100
+})
+```
+</CodeGroup>
+
+---
+
+## Tool: get_youtube_data
+
+Retrieve user YouTube watch history and interactions.
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `auth_token` | string | No* | API token (overrides session) |
+| `uid` | string | No* | User identifier (overrides session) |
+| `begin` | string | No | Start time filter (ISO 8601) |
+| `end` | string | No | End time filter (ISO 8601) |
+| `ingested_begin` | string | No | Ingestion start (for delta queries) |
+| `ingested_end` | string | No | Ingestion end (for delta queries) |
+| `category` | string | No | Filter by category (e.g., "/Music") |
+| `cursor` | string | No | Pagination cursor |
+| `limit` | number | No | Max results per request |
+
+*\*Either provide in tool call or use session credentials from connection*
+
+### Response Format
+
+```json
+{
+  "success": true,
+  "count": 1,
+  "has_more": false,
+  "next_cursor": null,
+  "applied_ingested_end": "2024-01-15T10:30:00Z",
+  "data": [
+    {
+      "event_id": "evt_yt_123",
+      "video_id": "dQw4w9WgXcQ",
+      "video_title": "Example Video Title",
+      "channel_name": "Example Channel",
+      "timestamp": "2024-01-15T10:30:00Z",
+      "category": "/Entertainment/Music",
+      "ingested_at": "2024-01-15T11:00:00Z"
+    }
+  ]
+}
+```
+
+### Example Usage
+
+<CodeGroup>
+```text Claude
+"Show me YouTube videos watched in the last 3 days"
+```
+
+```text Cursor
+Agent uses: get_youtube_data({
+  "begin": "2024-01-12T00:00:00Z",
+  "limit": 50
+})
+```
+</CodeGroup>
+
+---
+
+## Tool: get_browsing_data
+
+Retrieve user web browsing history (Chrome).
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `auth_token` | string | No* | API token (overrides session) |
+| `uid` | string | No* | User identifier (overrides session) |
+| `begin` | string | No | Start time filter (ISO 8601) |
+| `end` | string | No | End time filter (ISO 8601) |
+| `ingested_begin` | string | No | Ingestion start (for delta queries) |
+| `ingested_end` | string | No | Ingestion end (for delta queries) |
+| `category` | string | No | Filter by category (e.g., "/Shopping") |
+| `cursor` | string | No | Pagination cursor |
+| `limit` | number | No | Max results per request |
+
+*\*Either provide in tool call or use session credentials from connection*
+
+### Response Format
+
+```json
+{
+  "success": true,
+  "count": 1,
+  "has_more": true,
+  "next_cursor": "eyJsYXN0X2lkIjogNjc4OX0=",
+  "applied_ingested_end": "2024-01-15T10:30:00Z",
+  "data": [
+    {
+      "event_id": "evt_browse_789",
+      "url": "https://example.com/product",
+      "title": "Product Page - Example Store",
+      "timestamp": "2024-01-15T10:30:00Z",
+      "category": "/Shopping",
+      "ingested_at": "2024-01-15T11:00:00Z"
+    }
+  ]
+}
+```
+
+### Example Usage
+
+<CodeGroup>
+```text Claude
+"Find browsing history related to cooking recipes from last month"
+```
+
+```text Cursor
+Agent uses: get_browsing_data({
+  "begin": "2023-12-15T00:00:00Z",
+  "end": "2024-01-15T23:59:59Z",
+  "category": "/Food/Recipes"
+})
+```
+</CodeGroup>
+
+---
+
+## Tool: get_ads_data
+
+Retrieve user ad interactions (clicks and views).
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `auth_token` | string | No* | API token (overrides session) |
+| `uid` | string | No* | User identifier (overrides session) |
+| `begin` | string | No | Start time filter (ISO 8601) |
+| `end` | string | No | End time filter (ISO 8601) |
+| `ingested_begin` | string | No | Ingestion start (for delta queries) |
+| `ingested_end` | string | No | Ingestion end (for delta queries) |
+| `category` | string | No | Filter by category |
+| `cursor` | string | No | Pagination cursor |
+| `limit` | number | No | Max results per request |
+
+*\*Either provide in tool call or use session credentials from connection*
+
+### Response Format
+
+```json
+{
+  "success": true,
+  "count": 1,
+  "has_more": false,
+  "next_cursor": null,
+  "applied_ingested_end": "2024-01-15T10:30:00Z",
+  "data": [
+    {
+      "event_id": "evt_ad_456",
+      "ad_id": "ad_abc123",
+      "interaction_type": "click",
+      "advertiser": "Example Brand",
+      "timestamp": "2024-01-15T10:30:00Z",
+      "category": "/Shopping/Electronics",
+      "ingested_at": "2024-01-15T11:00:00Z"
+    }
+  ]
+}
+```
+
+### Example Usage
+
+<CodeGroup>
+```text Claude
+"Show me ad interactions from the last week"
+```
+
+```text Cursor
+Agent uses: get_ads_data({
+  "begin": "2024-01-08T00:00:00Z",
+  "limit": 100
+})
+```
+</CodeGroup>
+
+---
+
+## Tool: get_receipts_data
+
+Retrieve user purchase receipts (email receipts).
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `auth_token` | string | No* | API token (overrides session) |
+| `uid` | string | No* | User identifier (overrides session) |
+| `begin` | string | No | Start time filter (ISO 8601) |
+| `end` | string | No | End time filter (ISO 8601) |
+| `ingested_begin` | string | No | Ingestion start (for delta queries) |
+| `ingested_end` | string | No | Ingestion end (for delta queries) |
+| `category` | string | No | Filter by category |
+| `cursor` | string | No | Pagination cursor |
+| `limit` | number | No | Max results per request |
+
+*\*Either provide in tool call or use session credentials from connection*
+
+### Response Format
+
+```json
+{
+  "success": true,
+  "count": 1,
+  "has_more": false,
+  "next_cursor": null,
+  "applied_ingested_end": "2024-01-15T10:30:00Z",
+  "data": [
+    {
+      "event_id": "evt_receipt_999",
+      "merchant": "Example Store",
+      "amount": 49.99,
+      "currency": "USD",
+      "timestamp": "2024-01-15T10:30:00Z",
+      "category": "/Shopping/Retail",
+      "ingested_at": "2024-01-15T11:00:00Z"
+    }
+  ]
+}
+```
+
+### Example Usage
+
+<CodeGroup>
+```text Claude
+"Find all purchases over $100 from the last month"
+```
+
+```text Cursor
+Agent uses: get_receipts_data({
+  "begin": "2023-12-15T00:00:00Z",
+  "end": "2024-01-15T23:59:59Z",
+  "limit": 1000
+})
+// Then filters results where amount > 100
+```
+</CodeGroup>
+
+---
+
+## Common Patterns
+
+### Pagination
+
+All tools support cursor-based pagination for large datasets:
+
+1. Make initial request (no `cursor` parameter)
+2. Check response `has_more` field
+3. If `true`, use `next_cursor` in next request
+4. Repeat until `has_more = false`
+
+<CodeGroup>
+```typescript TypeScript
+let allData = [];
+let cursor = null;
+
+do {
+  const result = await mcpTool.call('get_search_data', {
+    begin: '2024-01-01T00:00:00Z',
+    limit: 1000,
+    cursor: cursor
+  });
+
+  allData.push(...result.data);
+  cursor = result.next_cursor;
+} while (result.has_more);
+```
+
+```python Python
+all_data = []
+cursor = None
+
+while True:
+    result = mcp_tool.call('get_search_data', {
+        'begin': '2024-01-01T00:00:00Z',
+        'limit': 1000,
+        'cursor': cursor
+    })
+
+    all_data.extend(result['data'])
+
+    if not result['has_more']:
+        break
+
+    cursor = result['next_cursor']
+```
+</CodeGroup>
+
+### Delta Queries
+
+Use `ingested_begin`/`ingested_end` to fetch only new data since last sync:
+
+1. Store `last_sync_time` after each sync
+2. Next sync: set `ingested_begin = last_sync_time`
+3. Update `last_sync_time` to response `applied_ingested_end`
+4. Repeat on subsequent syncs
+
+This avoids re-fetching unchanged data.
+
+### Category Filtering
+
+Categories use slash-delimited hierarchical paths:
+
+- `/Shopping` - All shopping data
+- `/Shopping/Electronics` - Electronics only
+- `/Food/Restaurants` - Restaurant searches/visits
+
+<Note>
+Categories are assigned by Emerge's classification system. Not all events have categories.
+</Note>
+
+### Error Handling
+
+When a tool call fails, it returns an error structure:
+
+```json
+{
+  "isError": true,
+  "content": [
+    {
+      "type": "text",
+      "text": "Error: 401 Unauthorized - Invalid API token. Verify your auth_token is correct."
+    }
+  ]
+}
+```
+
+Common error codes:
+- **401**: Invalid credentials
+- **400**: Invalid parameters (e.g., malformed timestamp)
+- **404**: User not found (no consent)
+- **429**: Rate limit exceeded
+- **500**: Server error (retry with exponential backoff)
+
+## Best Practices
+
+<Check>Use `limit: 1000` for balanced performance and memory</Check>
+<Check>Always check `has_more` for complete dataset retrieval</Check>
+<Check>Use `ingested_begin`/`end` for incremental syncs</Check>
+<Check>Apply category filters to reduce data volume</Check>
+<Check>Handle errors gracefully with retry logic</Check>
+
+## Rate Limits
+
+Per API token limits:
+- **100 requests/minute**
+- **1000 requests/hour**
+
+Exceeding limits returns HTTP 429. Wait before retrying or contact support for higher limits.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Setup Guide" icon="gear" href="/ai/mcp-query-setup">
+    Configure AI tools to use these tools
+  </Card>
+  <Card title="Query API Reference" icon="book" href="/query/overview">
+    HTTP API equivalents
+  </Card>
+  <Card title="Examples" icon="play" href="/ai/examples">
+    See workflow examples
+  </Card>
+  <Card title="MCP Server Overview" icon="server" href="/ai/mcp-server">
+    Architecture and deployment
+  </Card>
+</CardGroup>

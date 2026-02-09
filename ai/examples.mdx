@@ -561,13 +561,156 @@ if __name__ == '__main__':
 
 </CodeGroup>
 
+## Example 6: Query user data via MCP
+
+These examples show using the **Query API MCP server** to directly query consented user data from AI tools. This is different from the documentation MCP - it provides real data access.
+
+<Note>
+**Setup required:** These examples require the [Query API MCP server](/ai/mcp-query-setup) with valid credentials (`auth_token` and `uid`).
+</Note>
+
+<AccordionGroup>
+  <Accordion title="Analyze user interests from search history">
+    Using Claude Code with Query API MCP configured:
+
+    ```bash
+    claude "Analyze search patterns for user_123 from the last month and identify the top 3 interest categories"
+    ```
+
+    **What happens:**
+    1. Claude calls `get_search_data` tool with date range filter
+    2. Receives search history data grouped by category
+    3. Analyzes query frequency and patterns
+    4. Returns insights with specific examples
+
+    **Example response:**
+    ```text
+    Based on search history analysis:
+
+    1. **Technology/Software** (42% of searches)
+       - Frequent queries about React, TypeScript, AWS
+       - Pattern: Learning new frameworks
+
+    2. **Shopping/Electronics** (28% of searches)
+       - Looking at laptop reviews, monitors, keyboards
+       - Pattern: Office equipment research
+
+    3. **Health/Fitness** (18% of searches)
+       - Running training plans, nutrition guides
+       - Pattern: Marathon preparation
+    ```
+  </Accordion>
+
+  <Accordion title="Generate personalized content recommendations">
+    Using Cursor AI chat with Query API MCP configured:
+
+    ```text
+    "Based on this user's YouTube watch history and browsing patterns from the last 2 weeks,
+    suggest 5 relevant blog topics for our content calendar"
+    ```
+
+    **What happens:**
+    1. AI calls `get_youtube_data` and `get_browsing_data` tools
+    2. Identifies themes and recurring interests
+    3. Cross-references patterns across data sources
+    4. Generates topic suggestions with rationale
+
+    **Example response:**
+    ```text
+    Recommended blog topics based on user data:
+
+    1. "Getting Started with Docker in 2024"
+       - Watched 12 Docker tutorials, visited Docker docs 8 times
+
+    2. "Best Practices for React State Management"
+       - Heavy focus on Redux and Zustand content
+
+    3. "Home Office Setup Guide for Developers"
+       - Browsed ergonomic furniture, watched office tour videos
+
+    4. "Debugging Node.js Performance Issues"
+       - Searched for profiling tools, read performance articles
+
+    5. "AI Tools for Code Review"
+       - Interest in GitHub Copilot, Claude Code, and similar tools
+    ```
+  </Accordion>
+
+  <Accordion title="Build user insights dashboard">
+    Using Claude Desktop with Query API MCP:
+
+    ```text
+    "Create a user activity summary for the last 7 days showing:
+    - Most searched topics
+    - YouTube categories watched
+    - Top browsing domains
+    - Peak activity times"
+    ```
+
+    **What happens:**
+    1. AI calls multiple MCP tools in parallel (`get_search_data`, `get_youtube_data`, `get_browsing_data`)
+    2. Aggregates and analyzes data across sources
+    3. Identifies patterns and trends
+    4. Formats results as structured summary
+
+    **Example response:**
+    ```text
+    User Activity Summary (Last 7 Days)
+
+    📊 Search Activity
+    - 127 total searches
+    - Top topics: Machine Learning (23), JavaScript (18), AWS (15)
+    - Peak search time: 10am-12pm EST
+
+    🎥 YouTube Activity
+    - 34 videos watched (8.2 hours)
+    - Top categories: Technology (41%), Education (32%), Entertainment (27%)
+    - Longest session: 2.5 hours on Sunday
+
+    🌐 Browsing Activity
+    - 412 page views
+    - Top domains: github.com (87), stackoverflow.com (64), docs.aws.amazon.com (42)
+    - Most active day: Wednesday (94 pages)
+    ```
+  </Accordion>
+
+  <Accordion title="Delta sync for data warehouse">
+    Using Claude Code to generate sync script:
+
+    ```bash
+    claude "Write a Python script that uses the MCP tools to sync all new search data since my last sync timestamp into my data warehouse, handling pagination automatically"
+    ```
+
+    **What happens:**
+    1. Claude accesses Query API MCP tool documentation
+    2. Generates script using `get_search_data` with delta query parameters
+    3. Implements pagination with `cursor` and `has_more` handling
+    4. Uses `ingested_begin` for incremental updates
+
+    Claude will generate a complete script that:
+    - Loads last sync timestamp from state file
+    - Calls MCP tool with `ingested_begin` parameter
+    - Pages through all results
+    - Saves `applied_ingested_end` for next sync
+  </Accordion>
+</AccordionGroup>
+
 ## Try it yourself
 
-Set up the MCP connection and ask:
+### For documentation help (Docs MCP):
 
 - "How do I implement retry logic for Emerge API calls?"
 - "What happens if a user revokes consent?"
 - "Generate a React component that shows a Connect Data button"
 - "Show the correct way to handle uid without asking the user"
 
-See [MCP Setup](/ai/mcp-setup) to connect your AI tool.
+See [MCP Docs Setup](/ai/mcp-docs-setup) to connect your AI tool.
+
+### For querying user data (Query API MCP):
+
+- "Show me search patterns for the last week"
+- "What categories is this user most interested in?"
+- "Compare browsing and YouTube activity to find common interests"
+- "Generate a weekly activity report"
+
+See [Query API MCP Setup](/ai/mcp-query-setup) to connect with credentials.

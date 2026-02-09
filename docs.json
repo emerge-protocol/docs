@@ -144,18 +144,19 @@
         "tab": "AI Integration",
         "groups": [
           {
-            "group": "AI-Native Docs",
+            "group": "Getting Started",
             "pages": [
               "ai/overview",
-              "ai/mcp-setup",
               "ai/contextual-menu"
             ]
           },
           {
-            "group": "MCP Server",
+            "group": "MCP Servers",
             "pages": [
+              "ai/mcp-docs-setup",
               "ai/mcp-server",
-              "ai/mcp-tools"
+              "ai/mcp-query-setup",
+              "ai/mcp-query-tools"
             ]
           },
           {
