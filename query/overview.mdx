@@ -9,11 +9,11 @@ The Query API retrieves user data after they've granted consent through Emerge L
 
 | Data Type | Sync Endpoint | Async Endpoint | Description |
 |-----------|---------------|----------------|-------------|
-| Search History | `/sync/get_search` | `/search` | Google search queries |
-| Browsing History | `/sync/get_browsing` | `/browsing` | Chrome browser history |
-| YouTube History | `/sync/get_youtube` | `/youtube` | Watched videos |
-| Ad Interactions | `/sync/get_ads` | `/ads` | Ad clicks and views |
-| Receipts | `/sync/get_receipts` | `/receipts` | Purchase receipts with items and brands |
+| Search History | `/v1/sync/get_search` | `/v1/search` | Google search queries |
+| Browsing History | `/v1/sync/get_browsing` | `/v1/browsing` | Chrome browser history |
+| YouTube History | `/v1/sync/get_youtube` | `/v1/youtube` | Watched videos |
+| Ad Interactions | `/v1/sync/get_ads` | `/v1/ads` | Ad clicks and views |
+| Receipts | `/v1/sync/get_receipts` | `/v1/receipts` | Purchase receipts with items and brands |
 
 ## Sync vs Async
 
@@ -104,7 +104,7 @@ Sync endpoints return JSON directly:
 {
   "data": [
     {
-      "event_id": "evt_abc123",
+      "event_id": 12345,
       "query": "best restaurants nearby",
       "timestamp": "2024-01-15T10:30:00Z",
       "source": "google",

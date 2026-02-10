@@ -221,6 +221,10 @@ class EmergeQueryClient:
         """Get ad interactions (sync)."""
         return self._request('/sync/get_ads', params)
 
+    def get_receipts(self, params: QueryParams) -> QueryResult:
+        """Get receipts (sync)."""
+        return self._request('/sync/get_receipts', params)
+
     def fetch_all(
         self,
         fetcher: Callable[[QueryParams], QueryResult],
@@ -308,6 +312,9 @@ class AsyncEmergeQueryClient:
 
     async def get_ads(self, params: QueryParams) -> QueryResult:
         return await self._request('/sync/get_ads', params)
+
+    async def get_receipts(self, params: QueryParams) -> QueryResult:
+        return await self._request('/sync/get_receipts', params)
 
     async def fetch_all(
         self,

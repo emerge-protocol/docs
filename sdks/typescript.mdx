@@ -229,6 +229,23 @@ interface AdsEntry {
   ingested_at: string;
 }
 
+interface ReceiptsEntry {
+  event_id: number;
+  retailer_name: string;
+  total_value: number;
+  receipt_currency: string;
+  items: Array<{
+    name: string;
+    quantity: number;
+    unit_price: number;
+    brand: string;
+    category: string;
+  }>;
+  brands: string[];
+  timestamp: string;
+  ingested_at: string;
+}
+
 class EmergeQueryClient {
   private apiToken: string;
   private baseUrl = 'https://query.emergedata.ai/v1';
@@ -300,6 +317,13 @@ class EmergeQueryClient {
    */
   async getAds(params: QueryParams): Promise<QueryResult<AdsEntry>> {
     return this.request<AdsEntry>('/sync/get_ads', params);
+  }
+
+  /**
+   * Get receipts (sync)
+   */
+  async getReceipts(params: QueryParams): Promise<QueryResult<ReceiptsEntry>> {
+    return this.request<ReceiptsEntry>('/sync/get_receipts', params);
   }
 
   /**
