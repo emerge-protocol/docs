@@ -414,7 +414,7 @@ async function runDeltaSync() {
   }
 
   const state = { lastIngestedEnd: '2024-01-01T00:00:00Z' };
-  await deltaSync('user_12345', token, state);
+  await deltaSync('psub_d4e5f6789012345678901234abcdef01', token, state);
 }
 
 runDeltaSync().catch(err => {
@@ -478,7 +478,7 @@ async def process_new_data(records: list[Any]):
 if __name__ == '__main__':
     async def main():
         state = SyncState(last_ingested_end='2024-01-01T00:00:00Z')
-        await delta_sync('user_12345', 'your_api_token', state)
+        await delta_sync('psub_d4e5f6789012345678901234abcdef01', 'your_api_token', state)
 
     asyncio.run(main())
 ```
@@ -522,7 +522,7 @@ async function runQuery() {
     throw new Error('Missing EMERGE_API_TOKEN');
   }
 
-  const data = await getSearchHistory('user_12345', token);
+  const data = await getSearchHistory('psub_d4e5f6789012345678901234abcdef01', token);
   console.log(data);
 }
 
@@ -553,7 +553,7 @@ async def get_search_history(uid: str, token: str) -> dict:
 
 if __name__ == '__main__':
     async def main():
-        data = await get_search_history('user_12345', 'your_api_token')
+        data = await get_search_history('psub_d4e5f6789012345678901234abcdef01', 'your_api_token')
         print(data)
 
     asyncio.run(main())
@@ -574,7 +574,7 @@ These examples show using the **Query API MCP server** to directly query consent
     Using Claude Code with Query API MCP configured:
 
     ```bash
-    claude "Analyze search patterns for user_123 from the last month and identify the top 3 interest categories"
+    claude "Analyze search patterns for psub_c3d4e5f6789012345678901234abcdef from the last month and identify the top 3 interest categories"
     ```
 
     **What happens:**

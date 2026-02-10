@@ -171,6 +171,7 @@ mint validate
 | Browsing History | `/v1/sync/get_browsing` | `/v1/browsing` | Chrome page visits with titles |
 | YouTube History | `/v1/sync/get_youtube` | `/v1/youtube` | Watched videos with channels |
 | Ad Interactions | `/v1/sync/get_ads` | `/v1/ads` | Ad clicks and views |
+| Receipts | `/v1/sync/get_receipts` | `/v1/receipts` | Purchase receipts with items and brands |
 
 ### Link API endpoints
 - `POST /configs` - Create/update consent flow configuration (required: config_name, company_name, logo_url, privacy_policy_url, is_default; optional: webhook_url, flow_config)

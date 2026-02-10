@@ -26,7 +26,7 @@ All webhooks follow this structure:
   "event": "export.completed",
   "timestamp": "2024-01-15T10:35:00Z",
   "data": {
-    "uid": "user_12345",
+    "uid": "psub_d4e5f6789012345678901234abcdef01",
     "client_id": "your_client_id",
     "provider": "google-gmail"
   }
@@ -44,7 +44,7 @@ Sent when a user grants consent for the first time.
   "event": "consent.given",
   "timestamp": "2024-01-15T10:30:00Z",
   "data": {
-    "uid": "user_12345",
+    "uid": "psub_d4e5f6789012345678901234abcdef01",
     "client_id": "your_client_id",
     "provider": "google-gmail",
     "scopes": ["email.read", "profile"],
@@ -62,7 +62,7 @@ Sent when a user revokes their consent (e.g., via Google account settings or you
   "event": "consent.revoked",
   "timestamp": "2024-01-15T10:35:00Z",
   "data": {
-    "uid": "user_12345",
+    "uid": "psub_d4e5f6789012345678901234abcdef01",
     "client_id": "your_client_id",
     "provider": "google-gmail",
     "revoked_at": "2024-01-15T10:34:00Z"
@@ -79,7 +79,7 @@ Sent 7 days before consent expires. Use this to prompt users to reauthorize.
   "event": "consent.expiring",
   "timestamp": "2024-01-08T10:30:00Z",
   "data": {
-    "uid": "user_12345",
+    "uid": "psub_d4e5f6789012345678901234abcdef01",
     "client_id": "your_client_id",
     "provider": "google-gmail",
     "expires_at": "2024-01-15T10:30:00Z"
@@ -96,7 +96,7 @@ Sent when the consent flow completes successfully (user finished all steps).
   "event": "consent.completed",
   "timestamp": "2024-01-15T10:32:00Z",
   "data": {
-    "uid": "user_12345",
+    "uid": "psub_d4e5f6789012345678901234abcdef01",
     "client_id": "your_client_id",
     "provider": "google-gmail",
     "is_reauthorization": false
@@ -113,7 +113,7 @@ Sent when a user's data export is complete and ready to query.
   "event": "export.completed",
   "timestamp": "2024-01-15T10:35:00Z",
   "data": {
-    "uid": "user_12345",
+    "uid": "psub_d4e5f6789012345678901234abcdef01",
     "client_id": "your_client_id",
     "provider": "google-gmail",
     "data_types": ["search", "browsing", "youtube", "ads"],
@@ -136,7 +136,7 @@ Sent when an export fails, usually due to insufficient data.
   "event": "export.failed",
   "timestamp": "2024-01-15T10:35:00Z",
   "data": {
-    "uid": "user_12345",
+    "uid": "psub_d4e5f6789012345678901234abcdef01",
     "client_id": "your_client_id",
     "provider": "google-gmail",
     "reason": "insufficient_data",
@@ -154,7 +154,7 @@ Sent when the OAuth token has expired or been revoked and the user needs to reau
   "event": "token.needs_reauth",
   "timestamp": "2024-01-15T10:35:00Z",
   "data": {
-    "uid": "user_12345",
+    "uid": "psub_d4e5f6789012345678901234abcdef01",
     "client_id": "your_client_id",
     "provider": "google-gmail",
     "reason": "token_expired"

@@ -25,7 +25,7 @@ Do not ask end-users for `uid` or collect it in the frontend. Store the callback
 First-time consent granted. This user has connected their data for the first time with your application.
 
 ```
-https://yourapp.com/callback?status=success&state=abc123&uid=user_12345
+https://yourapp.com/callback?status=success&state=abc123&uid=psub_d4e5f6789012345678901234abcdef01
 ```
 
 ### `reauthorized`
@@ -35,7 +35,7 @@ User re-linked an existing consent. This happens when:
 - User re-authenticates after token expiration
 
 ```
-https://yourapp.com/callback?status=reauthorized&state=abc123&uid=user_12345
+https://yourapp.com/callback?status=reauthorized&state=abc123&uid=psub_d4e5f6789012345678901234abcdef01
 ```
 
 ### `failure`
@@ -43,7 +43,7 @@ https://yourapp.com/callback?status=reauthorized&state=abc123&uid=user_12345
 User cancelled or an error occurred during the flow.
 
 ```
-https://yourapp.com/callback?status=failure&state=abc123&uid=user_12345&error_code=user_failed
+https://yourapp.com/callback?status=failure&state=abc123&uid=psub_d4e5f6789012345678901234abcdef01&error_code=user_failed
 ```
 
 ## Error codes

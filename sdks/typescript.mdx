@@ -395,18 +395,18 @@ const queryClient = new EmergeQueryClient(process.env.EMERGE_API_TOKEN!);
 
 // Create consent link
 const { url, state } = linkClient.createLinkUrl({
-  userId: 'user_12345'
+  userId: 'psub_d4e5f6789012345678901234abcdef01'
 });
 
 // After consent, query data
 const searchHistory = await queryClient.getSearch({
-  uid: 'user_12345'
+  uid: 'psub_d4e5f6789012345678901234abcdef01'
 });
 
 // Fetch all with pagination
 const { data: allBrowsing, appliedIngestedEnd } = await queryClient.fetchAll(
   (params) => queryClient.getBrowsing(params),
-  { uid: 'user_12345' }
+  { uid: 'psub_d4e5f6789012345678901234abcdef01' }
 );
 
 // Delta sync - use appliedIngestedEnd for next sync

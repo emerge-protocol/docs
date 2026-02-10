@@ -50,7 +50,7 @@ https://mcp.emergedata.ai/mcp
     Now you can query user data:
 
     ```bash
-    claude "Get search history for user_123 from the last week"
+    claude "Get search history for psub_c3d4e5f6789012345678901234abcdef from the last week"
     ```
 
     Claude Code will:
@@ -162,7 +162,7 @@ The MCP server uses **session-based credentials**:
 | Credential | Purpose | Example |
 |------------|---------|---------|
 | `auth_token` | API authentication token from Control Room | `tok_abc123...` |
-| `uid` | User reference ID from consent callback | `user_123` or `alice@company.com` |
+| `uid` | User reference ID from consent callback | `psub_c3d4e5f6789012345678901234abcdef` or `psub_f6789012345678901234abcdef012345` |
 
 ### How It Works
 
@@ -196,7 +196,7 @@ See [MCP Query Tools](/ai/mcp-query-tools) for detailed tool documentation.
 
 <CodeGroup>
 ```text Claude
-"Get search history for user_123 from the last 7 days filtered by Shopping category"
+"Get search history for psub_c3d4e5f6789012345678901234abcdef from the last 7 days filtered by Shopping category"
 ```
 
 ```text Cursor
