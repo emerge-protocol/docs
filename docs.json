@@ -154,7 +154,6 @@
             "group": "MCP Servers",
             "pages": [
               "ai/mcp-docs-setup",
-              "ai/mcp-server",
               "ai/mcp-query-setup",
               "ai/mcp-query-tools"
             ]

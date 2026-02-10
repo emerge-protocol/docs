@@ -108,7 +108,7 @@ description: Concise summary for SEO/navigation
 ## File organization
 - `/link/*.mdx` - Link API guides (overview, authentication, create-link, callbacks, webhooks)
 - `/query/*.mdx` - Query API guides (overview, pagination)
-- `/ai/*.mdx` - AI integration docs (overview, mcp-docs-setup, mcp-query-setup, mcp-query-tools, mcp-server, contextual-menu, examples)
+- `/ai/*.mdx` - AI integration docs (overview, mcp-docs-setup, mcp-query-setup, mcp-query-tools, contextual-menu, examples)
 - `/ai-tools/*.mdx` - AI tool-specific setup guides (claude-code, cursor, windsurf) [Note: Directory exists in git but not filesystem - may be template content]
 - `/sdks/*.mdx` - SDK implementations (TypeScript, Python) - Copy-paste reference implementations
 - `/api-reference/` - Legacy API reference pages (deprecated - use OpenAPI auto-generated pages)
