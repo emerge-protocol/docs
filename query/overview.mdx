@@ -9,10 +9,11 @@ The Query API retrieves user data after they've granted consent through Emerge L
 
 | Data Type | Sync Endpoint | Async Endpoint | Description |
 |-----------|---------------|----------------|-------------|
-| Search History | `/sync/get_search` | `/search` | Google search queries |
-| Browsing History | `/sync/get_browsing` | `/browsing` | Chrome browser history |
-| YouTube History | `/sync/get_youtube` | `/youtube` | Watched videos |
-| Ad Interactions | `/sync/get_ads` | `/ads` | Ad clicks and views |
+| Search History | `/v1/sync/get_search` | `/v1/search` | Google search queries |
+| Browsing History | `/v1/sync/get_browsing` | `/v1/browsing` | Chrome browser history |
+| YouTube History | `/v1/sync/get_youtube` | `/v1/youtube` | Watched videos |
+| Ad Interactions | `/v1/sync/get_ads` | `/v1/ads` | Ad clicks and views |
+| Receipts | `/v1/sync/get_receipts` | `/v1/receipts` | Purchase receipts with items and brands |
 
 ## Sync vs Async
 
@@ -43,7 +44,7 @@ The Query API retrieves user data after they've granted consent through Emerge L
     ```typescript
     // 1. Start the query (up to 25 users)
     const startResponse = await fetch(
-      `https://query.emergedata.ai/v1/search?users=${encodeURIComponent(JSON.stringify(['user_1', 'user_2']))}&begin=2024-01-01&end=2024-01-31`,
+      `https://query.emergedata.ai/v1/search?users=${encodeURIComponent(JSON.stringify(['psub_a1b2c3d4e5f6789012345678901234ab', 'psub_b2c3d4e5f6789012345678901234abcd']))}&begin=2024-01-01&end=2024-01-31`,
       { headers: { 'Authorization': `Bearer ${token}` } }
     );
     const { job_id } = await startResponse.json();
@@ -87,7 +88,7 @@ The Query API retrieves user data after they've granted consent through Emerge L
 All Query API endpoints require a Bearer token:
 
 ```bash
-curl 'https://query.emergedata.ai/v1/sync/get_search?uid=user_123' \
+curl 'https://query.emergedata.ai/v1/sync/get_search?uid=psub_c3d4e5f6789012345678901234abcdef' \
   -H 'Authorization: Bearer your_api_token'
 ```
 
@@ -103,7 +104,7 @@ Sync endpoints return JSON directly:
 {
   "data": [
     {
-      "event_id": "evt_abc123",
+      "event_id": 12345,
       "query": "best restaurants nearby",
       "timestamp": "2024-01-15T10:30:00Z",
       "source": "google",

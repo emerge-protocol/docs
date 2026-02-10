@@ -17,7 +17,7 @@
       "display": "interactive"
     }
   },
-  "openapi": "openapi/link.json",
+  "openapi": ["openapi/link.json", "openapi/query.json"],
   "seo": {
     "indexing": "all"
   },
@@ -154,7 +154,6 @@
             "group": "MCP Servers",
             "pages": [
               "ai/mcp-docs-setup",
-              "ai/mcp-server",
               "ai/mcp-query-setup",
               "ai/mcp-query-tools"
             ]

@@ -145,7 +145,7 @@ const linkUrl = createLinkUrl({
   clientId: 'your_client_id',
   signingSecret: 'your_signing_secret',
   redirectUri: 'https://yourcompany.com/callback',
-  userId: 'user_12345'
+  userId: 'psub_d4e5f6789012345678901234abcdef01'
 });
 ```
 
@@ -192,7 +192,7 @@ link_url = create_link_url(
     client_id='your_client_id',
     signing_secret='your_signing_secret',
     redirect_uri='https://yourcompany.com/callback',
-    user_id='user_12345'
+    user_id='psub_d4e5f6789012345678901234abcdef01'
 )
 ```
 
@@ -284,7 +284,7 @@ async function getUserSearchHistory(uid: string) {
 }
 
 // Usage
-const searchHistory = await getUserSearchHistory('user_12345');
+const searchHistory = await getUserSearchHistory('psub_d4e5f6789012345678901234abcdef01');
 console.log(searchHistory.data);
 // [{ query: "best restaurants nearby", timestamp: "2024-01-15T10:30:00Z" }, ...]
 ```
@@ -301,7 +301,7 @@ def get_user_search_history(uid: str) -> dict:
     return response.json()
 
 # Usage
-search_history = get_user_search_history('user_12345')
+search_history = get_user_search_history('psub_d4e5f6789012345678901234abcdef01')
 print(search_history['data'])
 # [{'query': 'best restaurants nearby', 'timestamp': '2024-01-15T10:30:00Z'}, ...]
 ```

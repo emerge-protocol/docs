@@ -1,13 +1,31 @@
 ---
-title: "Query API MCP Setup"
+title: "MCP Query Setup"
 description: "Connect AI tools to query consented user data via MCP"
 ---
 
-The Query API MCP server allows AI agents to directly query user data (search history, browsing, YouTube, etc.) via Model Context Protocol.
+The Query API MCP server gives AI agents (Claude, Cursor, VS Code) secure access to consented user data. Instead of making direct HTTP calls, AI tools use the Model Context Protocol with session-based credentials.
 
 <Note>
-**Different from Docs MCP**: This guide covers the **Query API MCP server** for data retrieval. For documentation search, see [Docs MCP Setup](/ai/mcp-docs-setup).
+**Different from Docs MCP**: This server queries **user data**. For documentation search, see [Docs MCP Setup](/ai/mcp-docs-setup).
 </Note>
+
+## Architecture
+
+```mermaid
+graph LR
+    A[AI Agent<br/>Claude Code, Cursor] -->|MCP Protocol<br/>session credentials| B[MCP Server<br/>NestJS<br/>StreamableHTTP]
+    B -->|HTTP/JSON<br/>Bearer token| C[Query API<br/>FastAPI<br/>ClickHouse]
+```
+
+The MCP server is a thin wrapper around Query API sync endpoints:
+
+| Feature | MCP Server | Direct HTTP |
+|---------|------------|-------------|
+| **Protocol** | MCP (JSON-RPC over HTTP) | REST API |
+| **Credentials** | Session-based (provide once) | Per-request (Bearer token) |
+| **Tool Discovery** | Built-in (`tools/list`) | OpenAPI spec |
+| **AI Integration** | Native support | Manual implementation |
+| **Best For** | AI agents, IDE plugins | Server-to-server, custom apps |
 
 ## Prerequisites
 
@@ -50,7 +68,7 @@ https://mcp.emergedata.ai/mcp
     Now you can query user data:
 
     ```bash
-    claude "Get search history for user_123 from the last week"
+    claude "Get search history for psub_c3d4e5f6789012345678901234abcdef from the last week"
     ```
 
     Claude Code will:
@@ -155,21 +173,32 @@ https://mcp.emergedata.ai/mcp
   </Tab>
 </Tabs>
 
+### Verify Connection
+
+After configuration, test the health endpoint:
+
+```bash
+curl https://mcp.emergedata.ai/mcp/health
+
+# Expected response
+{
+  "status": "ok",
+  "service": "mcp-server",
+  "version": "1.0.0",
+  "protocol": "streamable-http"
+}
+```
+
 ## Session Credentials
 
-The MCP server uses **session-based credentials**:
+The MCP server uses **session-based credentials** — provide them once on connection, and all tool calls use them automatically.
 
 | Credential | Purpose | Example |
 |------------|---------|---------|
 | `auth_token` | API authentication token from Control Room | `tok_abc123...` |
-| `uid` | User reference ID from consent callback | `user_123` or `alice@company.com` |
+| `uid` | User reference ID from consent callback | `psub_c3d4e5f6789012345678901234abcdef` |
 
-### How It Works
-
-1. **Initialization**: Credentials passed once in connection URL
-2. **Storage**: Server stores credentials per-session in memory
-3. **Tool Calls**: All subsequent tool calls use session credentials automatically
-4. **Override**: Individual tool calls can override with different credentials
+You can override session credentials for individual tool calls by passing `auth_token` and `uid` as tool parameters.
 
 ### Security Best Practices
 
@@ -182,21 +211,84 @@ The MCP server uses **session-based credentials**:
 
 The MCP server exposes 5 tools that map 1:1 to Query API sync endpoints:
 
-| Tool Name | Data Type | Description |
-|-----------|-----------|-------------|
-| `get_search_data` | Search history | Google search queries with timestamps |
-| `get_youtube_data` | YouTube activity | Watched videos and interactions |
-| `get_browsing_data` | Web browsing | Chrome browsing history |
-| `get_ads_data` | Ad interactions | Ad clicks and views |
-| `get_receipts_data` | Purchase receipts | Email receipts and transactions |
+| MCP Tool | Query API Endpoint | Data Type |
+|----------|-------------------|-----------|
+| `get_search_data` | `/v1/sync/get_search` | Search history |
+| `get_youtube_data` | `/v1/sync/get_youtube` | YouTube watch history |
+| `get_browsing_data` | `/v1/sync/get_browsing` | Web browsing |
+| `get_ads_data` | `/v1/sync/get_ads` | Ad interactions |
+| `get_receipts_data` | `/v1/sync/get_receipts` | Purchase receipts |
 
-See [MCP Query Tools](/ai/mcp-query-tools) for detailed tool documentation.
+See [MCP Query Tools](/ai/mcp-query-tools) for detailed parameter and response documentation.
+
+## Response Format
+
+All tools return the same structure:
+
+```json
+{
+  "success": true,
+  "count": 10,
+  "has_more": true,
+  "next_cursor": "eyJsYXN0X2V2ZW50X2lkIjoxMjM0NX0=",
+  "applied_ingested_end": "2024-01-15T10:30:00Z",
+  "data": [
+    // ... event objects
+  ]
+}
+```
+
+## Pagination
+
+Use cursor-based pagination for large datasets:
+
+```typescript
+let cursor = null;
+let allData = [];
+
+do {
+  const result = await use_mcp_tool({
+    tool: "get_search_data",
+    arguments: {
+      begin: "2024-01-01T00:00:00Z",
+      limit: 1000,
+      cursor: cursor
+    }
+  });
+
+  allData.push(...result.data);
+  cursor = result.next_cursor;
+} while (result.has_more);
+```
+
+See [Pagination Guide](/query/pagination) for best practices.
+
+## Error Handling
+
+When a tool call fails, it returns:
+
+```json
+{
+  "isError": true,
+  "content": [
+    {
+      "type": "text",
+      "text": "Detailed error message"
+    }
+  ]
+}
+```
+
+Common errors:
+- **401 Unauthorized**: Invalid or missing credentials
+- **400 Bad Request**: Invalid parameters (e.g., malformed timestamp)
+- **500 Internal Server Error**: Query API or database error
 
 ## Example Queries
 
 <CodeGroup>
 ```text Claude
-"Get search history for user_123 from the last 7 days filtered by Shopping category"
+"Get search history for psub_c3d4e5f6789012345678901234abcdef from the last 7 days filtered by Shopping category"
 ```
 
 ```text Cursor
@@ -267,6 +359,14 @@ The MCP server inherits rate limits from the Query API:
 - **Concurrent**: 10 simultaneous connections per organization
 
 Exceeding limits returns HTTP 429 errors. Contact support for higher limits.
+
+## Source Code
+
+The MCP server is open-source:
+
+- **Repository**: [github.com/emerge-protocol/emgcp](https://github.com/emerge-protocol/emgcp)
+- **Issues**: [Report bugs or request features](https://github.com/emerge-protocol/emgcp/issues)
+- **License**: MIT
 
 ## Next Steps
 

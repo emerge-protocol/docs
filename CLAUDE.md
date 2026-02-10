@@ -108,7 +108,7 @@ description: Concise summary for SEO/navigation
 ## File organization
 - `/link/*.mdx` - Link API guides (overview, authentication, create-link, callbacks, webhooks)
 - `/query/*.mdx` - Query API guides (overview, pagination)
-- `/ai/*.mdx` - AI integration docs (overview, mcp-setup, contextual-menu, examples)
+- `/ai/*.mdx` - AI integration docs (overview, mcp-docs-setup, mcp-query-setup, mcp-query-tools, contextual-menu, examples)
 - `/ai-tools/*.mdx` - AI tool-specific setup guides (claude-code, cursor, windsurf) [Note: Directory exists in git but not filesystem - may be template content]
 - `/sdks/*.mdx` - SDK implementations (TypeScript, Python) - Copy-paste reference implementations
 - `/api-reference/` - Legacy API reference pages (deprecated - use OpenAPI auto-generated pages)
@@ -171,6 +171,7 @@ mint validate
 | Browsing History | `/v1/sync/get_browsing` | `/v1/browsing` | Chrome page visits with titles |
 | YouTube History | `/v1/sync/get_youtube` | `/v1/youtube` | Watched videos with channels |
 | Ad Interactions | `/v1/sync/get_ads` | `/v1/ads` | Ad clicks and views |
+| Receipts | `/v1/sync/get_receipts` | `/v1/receipts` | Purchase receipts with items and brands |
 
 ### Link API endpoints
 - `POST /configs` - Create/update consent flow configuration (required: config_name, company_name, logo_url, privacy_policy_url, is_default; optional: webhook_url, flow_config)
@@ -211,7 +212,7 @@ mint validate
 ### MCP (Model Context Protocol)
 - Mintlify auto-generates MCP server at `/mcp` endpoint
 - AI tools can search and query documentation semantically
-- Configuration examples in `/ai/mcp-setup.mdx` for Claude, Cursor, VS Code, Claude Code
+- Configuration examples in `/ai/mcp-docs-setup.mdx` for Claude, Cursor, VS Code, Claude Code
 - Quickstart guide includes AI tool setup section with MCP instructions for Cursor (.cursor/mcp.json), Claude Code (claude mcp add), and VS Code (.vscode/mcp.json)
 
 ### Contextual menu

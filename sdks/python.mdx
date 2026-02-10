@@ -221,6 +221,10 @@ class EmergeQueryClient:
         """Get ad interactions (sync)."""
         return self._request('/sync/get_ads', params)
 
+    def get_receipts(self, params: QueryParams) -> QueryResult:
+        """Get receipts (sync)."""
+        return self._request('/sync/get_receipts', params)
+
     def fetch_all(
         self,
         fetcher: Callable[[QueryParams], QueryResult],
@@ -308,6 +312,9 @@ class AsyncEmergeQueryClient:
 
     async def get_ads(self, params: QueryParams) -> QueryResult:
         return await self._request('/sync/get_ads', params)
+
+    async def get_receipts(self, params: QueryParams) -> QueryResult:
+        return await self._request('/sync/get_receipts', params)
 
     async def fetch_all(
         self,
@@ -408,17 +415,17 @@ link_client = EmergeLinkClient(config)
 query_client = EmergeQueryClient(os.environ['EMERGE_API_TOKEN'])
 
 # Create consent link
-result = link_client.create_link_url(user_id='user_12345')
+result = link_client.create_link_url(user_id='psub_d4e5f6789012345678901234abcdef01')
 print(f'Consent URL: {result.url}')
 
 # After consent, query data
-search_result = query_client.get_search(QueryParams(uid='user_12345'))
+search_result = query_client.get_search(QueryParams(uid='psub_d4e5f6789012345678901234abcdef01'))
 print(f'Search queries: {search_result.count}')
 
 # Fetch all with pagination
 all_browsing, applied_end = query_client.fetch_all(
     query_client.get_browsing,
-    uid='user_12345'
+    uid='psub_d4e5f6789012345678901234abcdef01'
 )
 print(f'Total browsing entries: {len(all_browsing)}')
 
