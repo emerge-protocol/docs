@@ -243,10 +243,15 @@
             "content": {
               "application/json": {
                 "schema": {},
-                "example": {
-                  "status": "session_initialized",
-                  "sid": "sid_3f2b6c7d8e9f",
-                  "message": "Continue the hosted Link flow in the returned session context."
+                "examples": {
+                  "default": {
+                    "summary": "Example response",
+                    "value": {
+                      "status": "session_initialized",
+                      "sid": "sid_3f2b6c7d8e9f",
+                      "message": "Continue the hosted Link flow in the returned session context."
+                    }
+                  }
                 }
               }
             }
@@ -475,26 +480,6 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "example": {
-                  "detail": "Invalid token"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Subject not found",
-            "content": {
-              "application/json": {
-                "example": {
-                  "detail": "Subject not found"
-                }
-              }
-            }
-          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -513,6 +498,26 @@
                       "type": "missing"
                     }
                   ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Invalid token"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Subject not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Subject not found"
                 }
               }
             }
@@ -582,26 +587,6 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "example": {
-                  "detail": "Invalid token"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "User not found",
-            "content": {
-              "application/json": {
-                "example": {
-                  "detail": "User not found"
-                }
-              }
-            }
-          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -620,6 +605,26 @@
                       "type": "missing"
                     }
                   ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Invalid token"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "User not found"
                 }
               }
             }
@@ -699,11 +704,7 @@
             },
             "title": "Sources"
           }
-        },
-        "required": [
-          "uid",
-          "sources"
-        ]
+        }
       },
       "FlowConfigResponse": {
         "properties": {
@@ -767,6 +768,54 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "ProviderExportStatus": {
+        "type": "object",
+        "title": "ProviderExportStatus",
+        "description": "Export status for a single provider.",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "data_ready": {
+            "type": "boolean",
+            "title": "Data Ready"
+          },
+          "data_landed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Landed At"
+          },
+          "export_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Export Status"
+          },
+          "export_completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Export Completed At"
+          }
+        }
       },
       "ValidationError": {
         "properties": {
@@ -859,16 +908,7 @@
             ],
             "title": "Revoked At"
           }
-        },
-        "required": [
-          "provider",
-          "scopes",
-          "window",
-          "valid_until",
-          "status",
-          "issued_at",
-          "revoked_at"
-        ]
+        }
       },
       "ConsentStatusResponse": {
         "type": "object",
@@ -890,67 +930,7 @@
             },
             "title": "Consents"
           }
-        },
-        "required": [
-          "sub",
-          "client_id",
-          "consents"
-        ]
-      },
-      "ProviderExportStatus": {
-        "type": "object",
-        "title": "ProviderExportStatus",
-        "description": "Export status for a single provider.",
-        "properties": {
-          "provider": {
-            "type": "string",
-            "title": "Provider"
-          },
-          "data_ready": {
-            "type": "boolean",
-            "title": "Data Ready"
-          },
-          "data_landed_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Data Landed At"
-          },
-          "export_status": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Export Status"
-          },
-          "export_completed_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Export Completed At"
-          }
-        },
-        "required": [
-          "provider",
-          "data_ready",
-          "data_landed_at",
-          "export_status",
-          "export_completed_at"
-        ]
+        }
       }
     },
     "securitySchemes": {

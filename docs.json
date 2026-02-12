@@ -55,7 +55,7 @@
       "url": "/control-room/overview"
     },
     {
-      "name": "The Data Wallet",
+      "name": "Data Wallet©",
       "url": "/data-wallet/overview"
     }
   ],
@@ -189,7 +189,7 @@
         ]
       },
       {
-        "tab": "The Data Wallet",
+        "tab": "Data Wallet©",
         "groups": [
           {
             "group": "Overview",
@@ -203,12 +203,12 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Control Room",
+          "anchor": "The Control Room",
           "href": "https://dashboard.emergedata.ai",
           "icon": "arrow-up-right-from-square"
         },
         {
-          "anchor": "Data Wallet",
+          "anchor": "Data Wallet©",
           "href": "https://wallet.emergedata.ai",
           "icon": "arrow-up-right-from-square"
         },
@@ -232,7 +232,7 @@
         "href": "https://emergedata.ai"
       },
       {
-        "label": "Data Wallet",
+        "label": "Data Wallet©",
         "href": "https://wallet.emergedata.ai"
       },
       {
@@ -242,7 +242,7 @@
     ],
     "primary": {
       "type": "button",
-      "label": "Control Room",
+      "label": "The Control Room",
       "href": "https://dashboard.emergedata.ai"
     }
   },

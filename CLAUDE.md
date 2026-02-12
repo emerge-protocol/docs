@@ -16,8 +16,8 @@ Documentation for Emerge API - a privacy-first API for accessing consented user 
 - Preview URL: http://localhost:3000
 - Logo: emerge-logo.svg (360x96px, text-based with system-ui fonts, 70px bold, used for both light and dark modes)
 - Favicon: favicon.ico (MS Windows icon resource with 16x16 and 32x32 PNG icons)
-- Navbar: Primary CTA button links to Control Room (dashboard.emergedata.ai), support email link (account@emergedata.ai) in secondary navigation and global footer
-- Global anchors: Control Room (arrow-up-right-from-square icon, external link indicator), Support (envelope icon)
+- Navbar: Primary CTA button links to The Control Room (dashboard.emergedata.ai), support email link (account@emergedata.ai) in secondary navigation and global footer
+- Global anchors: The Control Room (arrow-up-right-from-square icon, external link indicator), Support (envelope icon)
 
 ## Content structure
 
@@ -27,7 +27,7 @@ Documentation for Emerge API - a privacy-first API for accessing consented user 
 - **Query** (`/query/`) - Data retrieval (sync/async patterns, pagination, categories, schema)
 - **Ship with MCP** (`/ai/`) - MCP setup, contextual menu, examples, tool-specific guides
 - **The Control Room** (`/control-room/overview`) - Dashboard configuration and operational workflows
-- **The Data Wallet** (`/data-wallet/overview`) - End-user revocation and transparency workflows
+- **Data Wallet©** (`/data-wallet/overview`) - End-user revocation and transparency workflows
 
 ### Key files
 - `index.mdx` - Homepage with product overview and navigation
@@ -188,7 +188,7 @@ mint validate
 
 ## Terminology
 - "Emerge Link" - The consent flow product
-- "Control Room" - Dashboard at dashboard.emergedata.ai
+- "The Control Room" - Dashboard at dashboard.emergedata.ai
 - "consent" - User permission for data access
 - "export" - Data transfer from provider to Emerge
 - "query" - Retrieving user data via API

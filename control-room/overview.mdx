@@ -1,5 +1,5 @@
 ---
-title: "Control Room Overview"
+title: "The Control Room Overview"
 description: "Manage credentials, flow configs, and webhooks in the Control Room"
 ---
 
@@ -14,7 +14,7 @@ Use the Control Room at [dashboard.emergedata.ai](https://dashboard.emergedata.a
 
 ## Authentication context
 
-Actions in Control Room map to API-authenticated operations:
+Actions in The Control Room map to API-authenticated operations:
 - Link API base: `https://link.emergedata.ai`
 - Query API base: `https://query.emergedata.ai`
 - Auth header: `Authorization: Bearer <api_token>`
@@ -77,7 +77,7 @@ def list_flow_configs(api_token: str) -> list[dict]:
 
 ## Gotchas
 
-- Treat Control Room credentials as production secrets. Never embed them in frontend code.
+- Treat The Control Room credentials as production secrets. Never embed them in frontend code.
 - Rotate credentials after team changes.
 - Keep redirect URIs and webhook URLs environment-specific to avoid data leaks.
 

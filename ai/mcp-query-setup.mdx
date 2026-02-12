@@ -29,7 +29,7 @@ The MCP server is a thin wrapper around Query API sync endpoints:
 
 ## Prerequisites
 
-<Check>Control Room account with API credentials</Check>
+<Check>The Control Room account with API credentials</Check>
 <Check>At least one user with granted consent</Check>
 
 Don't have credentials? [Sign up here](https://dashboard.emergedata.ai).
@@ -195,7 +195,7 @@ The MCP server uses **session-based credentials** — provide them once on conne
 
 | Credential | Purpose | Example |
 |------------|---------|---------|
-| `auth_token` | API authentication token from Control Room | `tok_abc123...` |
+| `auth_token` | API authentication token from The Control Room | `tok_abc123...` |
 | `uid` | User reference ID from consent callback | `psub_c3d4e5f6789012345678901234abcdef` |
 
 You can override session credentials for individual tool calls by passing `auth_token` and `uid` as tool parameters.
@@ -204,7 +204,7 @@ You can override session credentials for individual tool calls by passing `auth_
 
 <Check>Never commit credentials to git repositories</Check>
 <Check>Use environment variables in configuration files</Check>
-<Check>Rotate API tokens regularly via Control Room</Check>
+<Check>Rotate API tokens regularly via The Control Room</Check>
 <Check>Use unique `uid` per user (don't share across users)</Check>
 
 ## Available Tools
@@ -313,7 +313,7 @@ The AI agent will:
     **Cause**: Invalid or missing credentials
 
     **Solutions**:
-    - Verify `auth_token` is correct from Control Room
+    - Verify `auth_token` is correct from The Control Room
     - Check that user has granted consent (callback `status=success`)
     - Ensure credentials are in the connection URL
     - Try refreshing/rotating your API token
