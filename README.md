@@ -9,7 +9,7 @@ Official documentation for the Emerge API - a privacy-first API for accessing co
 - **Query** - Data retrieval documentation
 - **Ship with MCP** - MCP setup and AI tool guides
 - **The Control Room** - Dashboard and configuration workflows
-- **Data Wallet©** - End-user revocation and transparency controls
+- **Data Wallet** - End-user revocation and transparency controls
 
 ## Development
 

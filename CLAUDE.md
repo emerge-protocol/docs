@@ -27,7 +27,7 @@ Documentation for Emerge API - a privacy-first API for accessing consented user 
 - **Query** (`/query/`) - Data retrieval (sync/async patterns, pagination, categories, schema)
 - **Ship with MCP** (`/ai/`) - MCP setup, contextual menu, examples, tool-specific guides
 - **The Control Room** (`/control-room/overview`) - Dashboard configuration and operational workflows
-- **Data Wallet©** (`/data-wallet/overview`) - End-user revocation and transparency workflows
+- **Data Wallet** (`/data-wallet/overview`) - End-user revocation and transparency workflows
 
 ### Key files
 - `index.mdx` - Homepage with product overview and navigation
