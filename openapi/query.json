@@ -141,6 +141,25 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CreateJobResponse"
+                },
+                "examples": {
+                  "default": {
+                    "summary": "Example response",
+                    "value": {
+                      "job_id": "82f80278-5e76-4d01-8f1d-b55e08f12a52",
+                      "status": "PENDING"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Invalid token"
                 }
               }
             }
@@ -151,6 +170,18 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                },
+                "example": {
+                  "detail": [
+                    {
+                      "loc": [
+                        "query",
+                        "uid"
+                      ],
+                      "msg": "Field required",
+                      "type": "missing"
+                    }
+                  ]
                 }
               }
             }
@@ -286,6 +317,25 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CreateJobResponse"
+                },
+                "examples": {
+                  "default": {
+                    "summary": "Example response",
+                    "value": {
+                      "job_id": "82f80278-5e76-4d01-8f1d-b55e08f12a52",
+                      "status": "PENDING"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Invalid token"
                 }
               }
             }
@@ -296,6 +346,18 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                },
+                "example": {
+                  "detail": [
+                    {
+                      "loc": [
+                        "query",
+                        "uid"
+                      ],
+                      "msg": "Field required",
+                      "type": "missing"
+                    }
+                  ]
                 }
               }
             }
@@ -431,6 +493,25 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CreateJobResponse"
+                },
+                "examples": {
+                  "default": {
+                    "summary": "Example response",
+                    "value": {
+                      "job_id": "82f80278-5e76-4d01-8f1d-b55e08f12a52",
+                      "status": "PENDING"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Invalid token"
                 }
               }
             }
@@ -441,6 +522,18 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                },
+                "example": {
+                  "detail": [
+                    {
+                      "loc": [
+                        "query",
+                        "uid"
+                      ],
+                      "msg": "Field required",
+                      "type": "missing"
+                    }
+                  ]
                 }
               }
             }
@@ -576,6 +669,25 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CreateJobResponse"
+                },
+                "examples": {
+                  "default": {
+                    "summary": "Example response",
+                    "value": {
+                      "job_id": "82f80278-5e76-4d01-8f1d-b55e08f12a52",
+                      "status": "PENDING"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Invalid token"
                 }
               }
             }
@@ -586,6 +698,18 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                },
+                "example": {
+                  "detail": [
+                    {
+                      "loc": [
+                        "query",
+                        "uid"
+                      ],
+                      "msg": "Field required",
+                      "type": "missing"
+                    }
+                  ]
                 }
               }
             }
@@ -721,6 +845,25 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CreateJobResponse"
+                },
+                "examples": {
+                  "default": {
+                    "summary": "Example response",
+                    "value": {
+                      "job_id": "82f80278-5e76-4d01-8f1d-b55e08f12a52",
+                      "status": "PENDING"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Invalid token"
                 }
               }
             }
@@ -731,6 +874,18 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                },
+                "example": {
+                  "detail": [
+                    {
+                      "loc": [
+                        "query",
+                        "uid"
+                      ],
+                      "msg": "Field required",
+                      "type": "missing"
+                    }
+                  ]
                 }
               }
             }
@@ -772,6 +927,38 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/QueryJob"
+                },
+                "examples": {
+                  "default": {
+                    "summary": "Example response",
+                    "value": {
+                      "task_id": "82f80278-5e76-4d01-8f1d-b55e08f12a52",
+                      "status": "COMPLETED",
+                      "url": "https://query-results.s3.amazonaws.com/82f80278-5e76-4d01-8f1d-b55e08f12a52.parquet",
+                      "created_at": "2026-02-12T09:10:11Z",
+                      "expire_at": "2026-02-19T09:10:11Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Invalid token"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "User not found"
                 }
               }
             }
@@ -782,6 +969,18 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                },
+                "example": {
+                  "detail": [
+                    {
+                      "loc": [
+                        "query",
+                        "uid"
+                      ],
+                      "msg": "Field required",
+                      "type": "missing"
+                    }
+                  ]
                 }
               }
             }
@@ -810,6 +1009,40 @@
                   },
                   "type": "array",
                   "title": "Response Jobs V1 Jobs Get"
+                },
+                "examples": {
+                  "default": {
+                    "summary": "Example response",
+                    "value": [
+                      {
+                        "task_id": "82f80278-5e76-4d01-8f1d-b55e08f12a52",
+                        "status": "COMPLETED",
+                        "url": "https://query-results.s3.amazonaws.com/82f80278-5e76-4d01-8f1d-b55e08f12a52.parquet",
+                        "created_at": "2026-02-12T09:10:11Z",
+                        "expire_at": "2026-02-19T09:10:11Z"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Invalid token"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "User not found"
                 }
               }
             }
@@ -991,6 +1224,53 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SearchDataResponse"
+                },
+                "examples": {
+                  "default": {
+                    "summary": "Example response",
+                    "value": {
+                      "data": [
+                        {
+                          "user_id": "psub_d4e5f6789012345678901234abcdef01",
+                          "event_id": 102938,
+                          "timestamp": "2026-02-10T08:22:11Z",
+                          "ingested_at": "2026-02-10T08:23:40Z",
+                          "url": "https://www.google.com/search?q=running+shoes",
+                          "title": "running shoes - Google Search",
+                          "query": "running shoes",
+                          "intent": "transactional",
+                          "category": "/Shopping/Apparel/Footwear",
+                          "brands": [
+                            "Nike"
+                          ]
+                        }
+                      ],
+                      "count": 1,
+                      "next_cursor": null,
+                      "has_more": false,
+                      "applied_ingested_end": "2026-02-12T09:10:11Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Invalid token"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "User not found"
                 }
               }
             }
@@ -1001,6 +1281,18 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                },
+                "example": {
+                  "detail": [
+                    {
+                      "loc": [
+                        "query",
+                        "uid"
+                      ],
+                      "msg": "Field required",
+                      "type": "missing"
+                    }
+                  ]
                 }
               }
             }
@@ -1177,6 +1469,52 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BrowsingDataResponse"
+                },
+                "examples": {
+                  "default": {
+                    "summary": "Example response",
+                    "value": {
+                      "data": [
+                        {
+                          "user_id": "psub_d4e5f6789012345678901234abcdef01",
+                          "event_id": 202938,
+                          "timestamp": "2026-02-10T08:30:11Z",
+                          "ingested_at": "2026-02-10T08:31:40Z",
+                          "url": "https://www.nike.com/running-shoes",
+                          "title": "Running Shoes | Nike",
+                          "page_category": "product_view",
+                          "category": "/Shopping/Apparel/Footwear",
+                          "brands": [
+                            "Nike"
+                          ]
+                        }
+                      ],
+                      "count": 1,
+                      "next_cursor": null,
+                      "has_more": false,
+                      "applied_ingested_end": "2026-02-12T09:10:11Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Invalid token"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "User not found"
                 }
               }
             }
@@ -1187,6 +1525,18 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                },
+                "example": {
+                  "detail": [
+                    {
+                      "loc": [
+                        "query",
+                        "uid"
+                      ],
+                      "msg": "Field required",
+                      "type": "missing"
+                    }
+                  ]
                 }
               }
             }
@@ -1363,6 +1713,51 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/YouTubeDataResponse"
+                },
+                "examples": {
+                  "default": {
+                    "summary": "Example response",
+                    "value": {
+                      "data": [
+                        {
+                          "user_id": "psub_d4e5f6789012345678901234abcdef01",
+                          "event_id": 302938,
+                          "timestamp": "2026-02-10T19:30:11Z",
+                          "ingested_at": "2026-02-10T19:31:40Z",
+                          "url": "https://www.youtube.com/watch?v=abc123",
+                          "title": "Best Running Shoes 2026",
+                          "category": "/Sports/Running & Walking",
+                          "brands": [
+                            "Nike"
+                          ]
+                        }
+                      ],
+                      "count": 1,
+                      "next_cursor": null,
+                      "has_more": false,
+                      "applied_ingested_end": "2026-02-12T09:10:11Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Invalid token"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "User not found"
                 }
               }
             }
@@ -1373,6 +1768,18 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                },
+                "example": {
+                  "detail": [
+                    {
+                      "loc": [
+                        "query",
+                        "uid"
+                      ],
+                      "msg": "Field required",
+                      "type": "missing"
+                    }
+                  ]
                 }
               }
             }
@@ -1549,6 +1956,54 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AdsDataResponse"
+                },
+                "examples": {
+                  "default": {
+                    "summary": "Example response",
+                    "value": {
+                      "data": [
+                        {
+                          "user_id": "psub_d4e5f6789012345678901234abcdef01",
+                          "event_id": 402938,
+                          "timestamp": "2026-02-10T09:30:11Z",
+                          "ingested_at": "2026-02-10T09:31:40Z",
+                          "source_domain": "google.com",
+                          "landing_domain": "nike.com",
+                          "url": "https://www.nike.com/running",
+                          "title": "20% Off Running Shoes",
+                          "category": "/Shopping/Apparel/Footwear",
+                          "brands": [
+                            "Nike"
+                          ],
+                          "ad_network": "Google Ads"
+                        }
+                      ],
+                      "count": 1,
+                      "next_cursor": null,
+                      "has_more": false,
+                      "applied_ingested_end": "2026-02-12T09:10:11Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Invalid token"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "User not found"
                 }
               }
             }
@@ -1559,6 +2014,18 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                },
+                "example": {
+                  "detail": [
+                    {
+                      "loc": [
+                        "query",
+                        "uid"
+                      ],
+                      "msg": "Field required",
+                      "type": "missing"
+                    }
+                  ]
                 }
               }
             }
@@ -1735,6 +2202,62 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ReceiptsDataResponse"
+                },
+                "examples": {
+                  "default": {
+                    "summary": "Example response",
+                    "value": {
+                      "data": [
+                        {
+                          "user_id": "psub_d4e5f6789012345678901234abcdef01",
+                          "event_id": 502938,
+                          "timestamp": "2026-02-09T11:10:11Z",
+                          "ingested_at": "2026-02-09T11:12:00Z",
+                          "subject": "Your receipt from Nike",
+                          "retailer_name": "Nike",
+                          "receipt_currency": "USD",
+                          "total_value": 129.99,
+                          "items": [
+                            {
+                              "name": "Nike Pegasus 42",
+                              "quantity": 1,
+                              "unit_price": 129.99,
+                              "brand": "Nike",
+                              "category": "/Shopping/Apparel/Footwear"
+                            }
+                          ],
+                          "category": "/Shopping/Apparel/Footwear",
+                          "brands": [
+                            "Nike"
+                          ]
+                        }
+                      ],
+                      "count": 1,
+                      "next_cursor": null,
+                      "has_more": false,
+                      "applied_ingested_end": "2026-02-12T09:10:11Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Invalid token"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "User not found"
                 }
               }
             }
@@ -1745,6 +2268,111 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                },
+                "example": {
+                  "detail": [
+                    {
+                      "loc": [
+                        "query",
+                        "uid"
+                      ],
+                      "msg": "Field required",
+                      "type": "missing"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "server": "https://query.emergedata.ai"
+        }
+      }
+    },
+    "/v1/sync/categories": {
+      "get": {
+        "tags": [
+          "Query Sync"
+        ],
+        "summary": "Get available categories",
+        "description": "Return distinct category paths available for a given table.",
+        "operationId": "get_available_categories_v1_sync_categories_get",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "table",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "searches",
+                "browsing",
+                "youtube",
+                "ads",
+                "receipts"
+              ],
+              "title": "Table"
+            },
+            "description": "Table to retrieve categories from"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoriesResponse"
+                },
+                "examples": {
+                  "default": {
+                    "summary": "Category paths",
+                    "value": {
+                      "categories": [
+                        "/Shopping/Apparel/Footwear",
+                        "/Sports/Running & Walking",
+                        "/Computers & Electronics/Software"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Invalid token"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                },
+                "example": {
+                  "detail": [
+                    {
+                      "loc": [
+                        "query",
+                        "uid"
+                      ],
+                      "msg": "Field required",
+                      "type": "missing"
+                    }
+                  ]
                 }
               }
             }
@@ -2644,6 +3272,22 @@
           "brands"
         ],
         "title": "YouTubeEvent"
+      },
+      "CategoriesResponse": {
+        "type": "object",
+        "title": "CategoriesResponse",
+        "properties": {
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "title": "Categories"
+          }
+        },
+        "required": [
+          "categories"
+        ]
       }
     },
     "securitySchemes": {

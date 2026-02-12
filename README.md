@@ -4,10 +4,12 @@ Official documentation for the Emerge API - a privacy-first API for accessing co
 
 ## Structure
 
-- **Guide pages** - Getting started, SDKs, integration guides
-- **Link API** - Consent flow documentation
-- **Query API** - Data retrieval documentation
-- **AI Integration** - MCP setup and AI tool guides
+- **Guides** - Getting started, SDKs, integration guides
+- **Link** - Consent flow documentation
+- **Query** - Data retrieval documentation
+- **Ship with MCP** - MCP setup and AI tool guides
+- **The Control Room** - Dashboard and configuration workflows
+- **The Data Wallet** - End-user revocation and transparency controls
 
 ## Development
 

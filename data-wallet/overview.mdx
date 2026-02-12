@@ -1,0 +1,158 @@
+---
+title: "Data Wallet Overview"
+description: "End-user dashboard for transparency and consent revocation"
+---
+
+The Data Wallet at [wallet.emergedata.ai](https://wallet.emergedata.ai) gives your users direct control over consent.
+
+## What your users can do
+
+- View active connections by provider (`google_data`, `gmail`)
+- Review connected companies
+- Revoke consent per provider
+- Reconnect when needed
+
+## Integration impact
+
+When users revoke consent in Data Wallet, you receive a `consent.revoked` webhook with `sources[]` for affected providers.
+
+### Webhook response example
+
+```json
+{
+  "event": "consent.revoked",
+  "timestamp": "2026-02-12T09:10:11Z",
+  "uid": "psub_d4e5f6789012345678901234abcdef01",
+  "client_id": "ck_live_123456789",
+  "sources": [
+    {
+      "provider": "google_data",
+      "revoked_at": "2026-02-12T09:10:11Z",
+      "reason": "user_revoked"
+    }
+  ]
+}
+```
+
+## Handle revocations safely
+
+<CodeGroup>
+
+```typescript TypeScript
+import crypto from "crypto";
+import express from "express";
+
+const app = express();
+app.use(express.raw({ type: "application/json" }));
+
+const webhookSecret = process.env.EMERGE_WEBHOOK_SECRET;
+if (!webhookSecret) {
+  throw new Error("Missing EMERGE_WEBHOOK_SECRET");
+}
+
+app.post("/webhooks/emerge", async (req, res) => {
+  try {
+    const signature = req.header("x-signature");
+    if (!signature) {
+      return res.status(401).send("Missing signature");
+    }
+
+    const expected = crypto
+      .createHmac("sha256", webhookSecret)
+      .update(req.body)
+      .digest("hex");
+
+    const matches =
+      signature.length === expected.length &&
+      crypto.timingSafeEqual(Buffer.from(signature, "hex"), Buffer.from(expected, "hex"));
+
+    if (!matches) {
+      return res.status(401).send("Invalid signature");
+    }
+
+    const payload = JSON.parse(req.body.toString("utf8")) as {
+      event: string;
+      uid: string;
+      sources?: Array<{ provider: string; reason?: string }>;
+    };
+
+    if (payload.event === "consent.revoked") {
+      await revokeUserAccess(payload.uid, payload.sources ?? []);
+    }
+
+    return res.status(200).send("OK");
+  } catch (error) {
+    console.error("Webhook error", error);
+    return res.status(500).send("Server error");
+  }
+});
+
+async function revokeUserAccess(uid: string, sources: Array<{ provider: string }>) {
+  for (const source of sources) {
+    await deleteProviderData(uid, source.provider);
+  }
+}
+
+async function deleteProviderData(uid: string, provider: string) {
+  console.log(`Deleting ${provider} data for ${uid}`);
+}
+```
+
+```python Python
+import hashlib
+import hmac
+import json
+import os
+from fastapi import FastAPI, HTTPException, Request
+
+app = FastAPI()
+webhook_secret = os.getenv("EMERGE_WEBHOOK_SECRET")
+if not webhook_secret:
+    raise RuntimeError("Missing EMERGE_WEBHOOK_SECRET")
+
+@app.post("/webhooks/emerge")
+async def handle_webhook(request: Request):
+    body = await request.body()
+    signature = request.headers.get("x-signature")
+    if not signature:
+        raise HTTPException(status_code=401, detail="Missing signature")
+
+    expected = hmac.new(
+        webhook_secret.encode(),
+        body,
+        hashlib.sha256
+    ).hexdigest()
+
+    if not hmac.compare_digest(signature, expected):
+        raise HTTPException(status_code=401, detail="Invalid signature")
+
+    payload = json.loads(body)
+    if payload.get("event") == "consent.revoked":
+        uid = payload.get("uid")
+        sources = payload.get("sources", [])
+        await revoke_user_access(uid, sources)
+
+    return {"status": "ok"}
+
+async def revoke_user_access(uid: str, sources: list[dict]):
+    for source in sources:
+        provider = source.get("provider", "unknown")
+        await delete_provider_data(uid, provider)
+
+async def delete_provider_data(uid: str, provider: str):
+    print(f"Deleting {provider} data for {uid}")
+```
+
+</CodeGroup>
+
+## Gotchas
+
+- Revoke processing must be idempotent because webhooks can retry.
+- Handle per-provider revocation in `sources[]`; do not assume full-account revocation.
+- Keep deletion logs for compliance/audit trails.
+
+## Related docs
+
+- [Webhooks](/link/webhooks)
+- [Callbacks](/link/callbacks)
+- [Authentication & Status Endpoints](/link/authentication)

@@ -223,7 +223,7 @@ app.get('/callback', (req, res) => {
 
   if (status === 'success' || status === 'reauthorized') {
     // Consent granted - data export will start automatically
-    // You'll receive a webhook when data is ready
+    // Next step: poll /export/status/{uid} and wait for provider-level readiness
     console.log(`User ${uid} granted consent`);
     res.redirect('/success');
   } else {
@@ -262,7 +262,99 @@ async def callback(
 
 </CodeGroup>
 
-## Step 4: Query user data
+## Step 4: Check export status
+
+Before querying, poll `GET /export/status/{uid}` until the provider you need is ready.
+
+<CodeGroup>
+
+```typescript TypeScript
+async function waitForProviderExport(uid: string, provider: 'google_data' | 'gmail') {
+  for (let attempt = 1; attempt <= 10; attempt += 1) {
+    const response = await fetch(
+      `https://link.emergedata.ai/export/status/${encodeURIComponent(uid)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${API_TOKEN}`
+        }
+      }
+    );
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`Export status failed (${response.status}): ${body}`);
+    }
+
+    const payload = await response.json() as {
+      uid: string;
+      sources: Array<{ provider: string; data_ready: boolean }>;
+    };
+
+    const source = payload.sources.find((item) => item.provider === provider);
+    if (source?.data_ready) {
+      return;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 1500 * attempt));
+  }
+
+  throw new Error(`Export not ready for provider ${provider}`);
+}
+```
+
+```python Python
+import time
+import requests
+
+def wait_for_provider_export(uid: str, provider: str) -> None:
+    for attempt in range(1, 11):
+        response = requests.get(
+            f'https://link.emergedata.ai/export/status/{uid}',
+            headers={'Authorization': f'Bearer {API_TOKEN}'}
+        )
+        response.raise_for_status()
+
+        payload = response.json()
+        source = next(
+            (item for item in payload.get('sources', []) if item.get('provider') == provider),
+            None
+        )
+
+        if source and source.get('data_ready') is True:
+            return
+
+        time.sleep(1.5 * attempt)
+
+    raise RuntimeError(f'Export not ready for provider {provider}')
+```
+
+</CodeGroup>
+
+### Response example
+
+```json
+{
+  "uid": "psub_d4e5f6789012345678901234abcdef01",
+  "sources": [
+    {
+      "provider": "google_data",
+      "data_ready": true,
+      "data_landed_at": "2026-02-12T09:10:11Z",
+      "export_status": "completed",
+      "export_completed_at": "2026-02-12T09:10:11Z"
+    },
+    {
+      "provider": "gmail",
+      "data_ready": false,
+      "data_landed_at": null,
+      "export_status": "running",
+      "export_completed_at": null
+    }
+  ]
+}
+```
+
+## Step 5: Query user data
 
 Once consent is granted and data is exported, query it using the sync endpoints.
 
@@ -314,20 +406,20 @@ print(search_history['data'])
 - Signing URL parameters in the wrong order or signing URL-encoded values
 - Treating `state` as a user identifier or skipping state verification
 - Asking users to input `uid` or failing to store the callback `uid`
-- Calling Query before the `export.completed` webhook (handle empty results + retry)
+- Querying before `GET /export/status/{uid}` shows `data_ready: true` for your provider
 - Exposing `signing_secret` or API tokens in client-side code
 
 ## Next steps
 
 <CardGroup cols={2}>
-  <Card title="Link API Guide" icon="link" href="/link/overview">
+  <Card title="Link Guide" icon="link" href="/link/overview">
     Deep dive into consent flow options
   </Card>
-  <Card title="Query API Guide" icon="database" href="/query/overview">
+  <Card title="Query Guide" icon="database" href="/query/overview">
     Learn about sync vs async queries
   </Card>
   <Card title="Webhooks" icon="webhook" href="/link/webhooks">
-    Get notified when data is ready
+    Track consent lifecycle changes
   </Card>
   <Card title="SDK Reference" icon="code" href="/sdks/typescript">
     Full SDK implementation examples

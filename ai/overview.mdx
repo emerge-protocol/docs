@@ -1,5 +1,5 @@
 ---
-title: "AI Integration"
+title: "Ship with MCP"
 description: "Connect AI tools to Emerge documentation and user data via MCP"
 ---
 
@@ -138,7 +138,7 @@ Requirements:
 - redirect_uri must be pre-approved in the Control Room.
 - Never ask end-users for uid. If you send uid, use your internal user id. Otherwise store the callback uid.
 - Query sync endpoints with uid: https://query.emergedata.ai/v1/sync/get_*
-- Wait for export.completed webhook or handle empty results with retry + backoff.
+- Poll `GET /export/status/{uid}` and query only when the provider in `sources[]` is `data_ready: true`.
 Return TypeScript and Python examples with async/await and error handling.
 ```
 

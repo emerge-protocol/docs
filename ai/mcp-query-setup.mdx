@@ -24,7 +24,7 @@ The MCP server is a thin wrapper around Query API sync endpoints:
 | **Protocol** | MCP (JSON-RPC over HTTP) | REST API |
 | **Credentials** | Session-based (provide once) | Per-request (Bearer token) |
 | **Tool Discovery** | Built-in (`tools/list`) | OpenAPI spec |
-| **AI Integration** | Native support | Manual implementation |
+| **Ship with MCP** | Native support | Manual implementation |
 | **Best For** | AI agents, IDE plugins | Server-to-server, custom apps |
 
 ## Prerequisites
@@ -323,7 +323,7 @@ The AI agent will:
     **Cause**: No data available for query
 
     **Solutions**:
-    - Data export may still be processing (wait for `export.completed` webhook)
+    - Data export may still be processing (poll `GET /export/status/{uid}` and wait for provider `data_ready: true`)
     - User may not have data for the requested type
     - Check time filters (`begin`/`end`) aren't excluding all data
     - Verify `category` filter isn't too restrictive
@@ -374,13 +374,13 @@ The MCP server is open-source:
   <Card title="Tool Reference" icon="wrench" href="/ai/mcp-query-tools">
     Detailed documentation for all 5 tools
   </Card>
-  <Card title="Query API Guide" icon="database" href="/query/overview">
+  <Card title="Query Guide" icon="database" href="/query/overview">
     Learn about sync vs async queries
   </Card>
   <Card title="Examples" icon="play" href="/ai/examples">
     See AI workflow examples
   </Card>
   <Card title="Webhooks" icon="webhook" href="/link/webhooks">
-    Get notified when data is ready
+    Track consent lifecycle changes
   </Card>
 </CardGroup>

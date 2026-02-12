@@ -3,6 +3,23 @@ title: "Changelog"
 description: "API updates and documentation changes"
 ---
 
+## v0.0.11 (2026-02-12)
+
+**Link API:**
+- Updated webhook payload contract to v2 (`sources[]` + `client_id` in payload)
+- Updated webhook headers (`X-Signature`, `X-Webhook-Version: 2.0`, `X-Attempt-Number`, `Idempotency-Key`)
+- Added `client_id` to `GET /consent/status/{uid}` response
+- Updated `GET /export/status/{uid}` to return provider-level `sources[]`
+- Provider names standardized to `google_data` and `gmail`
+
+**Query API Docs:**
+- Added `GET /v1/sync/categories`
+- Added Event Categories guide (first-level taxonomy list)
+- Added Data Schema guide (field-level payload reference)
+- Added response examples across endpoint docs
+
+---
+
 ## v0.0.10 (2026-01-28)
 
 **Link API:**
@@ -40,7 +57,7 @@ Initial release.
 - YouTube watch history
 - Ad interactions
 
-### AI Integration
+### Ship with MCP (formerly AI Integration)
 
 - MCP server for AI tool integration
 - Contextual menu for one-click AI actions

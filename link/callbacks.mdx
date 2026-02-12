@@ -122,6 +122,8 @@ function getErrorMessage(errorCode: string): string {
 ```
 
 ```python Python
+from datetime import datetime, timezone
+from urllib.parse import quote
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import RedirectResponse
 
@@ -133,7 +135,7 @@ async def emerge_callback(
     status: str,
     state: str,
     uid: str,
-    error_code: str = None
+    error_code: str | None = None
 ):
     # 1. Verify state matches (CSRF protection)
     expected_state = request.session.get('emerge_state')
@@ -147,7 +149,7 @@ async def emerge_callback(
     if status == 'success':
         # First-time consent - data export will start automatically
         await save_user_consent(uid, {
-            'consented_at': datetime.utcnow()
+            'consented_at': datetime.now(timezone.utc)
         })
 
         return RedirectResponse('/dashboard?connected=true')
@@ -155,20 +157,20 @@ async def emerge_callback(
     elif status == 'reauthorized':
         # Existing consent refreshed
         await update_user_consent(uid, {
-            'reauthorized_at': datetime.utcnow()
+            'reauthorized_at': datetime.now(timezone.utc)
         })
 
         return RedirectResponse('/dashboard?reconnected=true')
 
     elif status == 'failure':
         error_message = get_error_message(error_code)
-        return RedirectResponse(f'/connect?error={error_message}')
+        return RedirectResponse(f'/connect?error={quote(error_message)}')
 
     else:
         return RedirectResponse('/error')
 
 
-def get_error_message(error_code: str) -> str:
+def get_error_message(error_code: str | None) -> str:
     messages = {
         'user_failed': 'You cancelled the connection.',
         'data_invalid': 'Your account doesn\'t have enough data history.',
@@ -201,11 +203,11 @@ When you receive `success` or `reauthorized`:
 
 1. **Data export starts automatically** - Emerge begins exporting the user's data from their provider
 2. **Export takes 1-15 minutes** - Depending on data volume
-3. **Webhook notification** - You receive a webhook when data is ready to query
-4. **Query available** - Use the Query API to retrieve the user's data
+3. **Consent lifecycle webhook (optional)** - You may receive `consent.given`/`consent.reauthorized` for audit/state updates
+4. **Poll export readiness** - Check `GET /export/status/{uid}` and query only when the provider in `sources[]` has `data_ready: true`
 
 <Note>
-You can poll the export status endpoint if you prefer not to use webhooks. See [Webhooks](/link/webhooks) for the recommended approach.
+Use provider-level readiness from `sources[]` instead of assuming all providers are ready at once.
 </Note>
 
 ## Completed session handling

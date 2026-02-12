@@ -242,7 +242,12 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {},
+                "example": {
+                  "status": "session_initialized",
+                  "sid": "sid_3f2b6c7d8e9f",
+                  "message": "Continue the hosted Link flow in the returned session context."
+                }
               }
             }
           },
@@ -252,6 +257,18 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                },
+                "example": {
+                  "detail": [
+                    {
+                      "loc": [
+                        "query",
+                        "uid"
+                      ],
+                      "msg": "Field required",
+                      "type": "missing"
+                    }
+                  ]
                 }
               }
             }
@@ -281,6 +298,24 @@
                   },
                   "type": "array",
                   "title": "Response List Flow Configs Configs Get"
+                },
+                "examples": {
+                  "default": {
+                    "summary": "Default flow config",
+                    "value": [
+                      {
+                        "config_id": "cfg_30bfe2ca",
+                        "config_name": "default",
+                        "company_name": "Wonderful AI",
+                        "logo_url": "https://assets.emergedata.ai/logo/wonderful-ai.png",
+                        "privacy_policy_url": "https://wonderful.ai/privacy",
+                        "webhook_url": "https://api.wonderful.ai/webhooks/emerge",
+                        "flow_version": "emerge",
+                        "is_default": true,
+                        "preview_url": "https://link.emergedata.ai/preview/ck_live_123?flow_config=default"
+                      }
+                    ]
+                  }
                 }
               }
             }
@@ -319,6 +354,22 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FlowConfigResponse"
+                },
+                "examples": {
+                  "default": {
+                    "summary": "Created config",
+                    "value": {
+                      "config_id": "cfg_30bfe2ca",
+                      "config_name": "default",
+                      "company_name": "Wonderful AI",
+                      "logo_url": "https://assets.emergedata.ai/logo/wonderful-ai.png",
+                      "privacy_policy_url": "https://wonderful.ai/privacy",
+                      "webhook_url": "https://api.wonderful.ai/webhooks/emerge",
+                      "flow_version": "emerge",
+                      "is_default": true,
+                      "preview_url": "https://link.emergedata.ai/preview/ck_live_123?flow_config=default"
+                    }
+                  }
                 }
               }
             }
@@ -329,6 +380,18 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                },
+                "example": {
+                  "detail": [
+                    {
+                      "loc": [
+                        "query",
+                        "uid"
+                      ],
+                      "msg": "Field required",
+                      "type": "missing"
+                    }
+                  ]
                 }
               }
             }
@@ -350,7 +413,7 @@
           "Link"
         ],
         "summary": "Get Consent Status",
-        "description": "Get consent status for a pairwise subject.\n\nReconstructs consent state from webhook event history since\nconsent_token table is deprecated.\n\nArgs:\n    uid: Pairwise subject identifier (partner_uid)\n    client_id: Authenticated client ID\n\nReturns:\n    Dictionary containing the subject and a list of consent records (not actual tokens, but reconstructed consent states).",
+        "description": "Get consent status per provider for a partner user (`uid`).\n\nThe response is reconstructed from partner mappings and consent webhook history.",
         "operationId": "get_consent_status_consent_status__uid__get",
         "security": [
           {
@@ -373,7 +436,62 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentStatusResponse"
+                },
+                "examples": {
+                  "default": {
+                    "summary": "Provider consent statuses",
+                    "value": {
+                      "sub": "psub_d4e5f6789012345678901234abcdef01",
+                      "client_id": "ck_live_123456789",
+                      "consents": [
+                        {
+                          "provider": "google_data",
+                          "scopes": [
+                            "https://www.googleapis.com/auth/dataportability.myactivity.search"
+                          ],
+                          "window": "fixed",
+                          "valid_until": "2026-08-11T09:10:11.000000+00:00",
+                          "status": "active",
+                          "issued_at": "2026-02-12T09:10:11.000000+00:00",
+                          "revoked_at": null
+                        },
+                        {
+                          "provider": "gmail",
+                          "scopes": [
+                            "https://www.googleapis.com/auth/gmail.readonly"
+                          ],
+                          "window": "fixed",
+                          "valid_until": "2026-08-11T09:10:11.000000+00:00",
+                          "status": "revoked",
+                          "issued_at": "2025-12-01T11:00:00.000000+00:00",
+                          "revoked_at": "2026-01-15T14:20:00.000000+00:00"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Invalid token"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Subject not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Subject not found"
+                }
               }
             }
           },
@@ -383,6 +501,18 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                },
+                "example": {
+                  "detail": [
+                    {
+                      "loc": [
+                        "query",
+                        "uid"
+                      ],
+                      "msg": "Field required",
+                      "type": "missing"
+                    }
+                  ]
                 }
               }
             }
@@ -399,7 +529,7 @@
           "Link"
         ],
         "summary": "Get Export Status",
-        "description": "Check if DPAPI export data is ready and queryable.\n\nPartners can poll this endpoint to know when user data\nhas been processed and is available in ClickHouse.\n\nArgs:\n    uid: Partner's user identifier (partner_uid)\n    client_id: Authenticated client ID from JWT\n\nReturns:\n    Status indicating if data is ready, with timestamps",
+        "description": "Check export readiness per provider for a partner user (`uid`).\n\nUse `sources[]` and wait for the provider you need to report `data_ready: true`.",
         "operationId": "get_export_status_export_status__uid__get",
         "security": [
           {
@@ -424,6 +554,50 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ExportStatusResponse"
+                },
+                "examples": {
+                  "default": {
+                    "summary": "Per-provider export readiness",
+                    "value": {
+                      "uid": "psub_d4e5f6789012345678901234abcdef01",
+                      "sources": [
+                        {
+                          "provider": "google_data",
+                          "data_ready": true,
+                          "data_landed_at": "2026-02-12T09:10:11.000000+00:00",
+                          "export_status": "completed",
+                          "export_completed_at": "2026-02-12T09:10:11.000000+00:00"
+                        },
+                        {
+                          "provider": "gmail",
+                          "data_ready": false,
+                          "data_landed_at": null,
+                          "export_status": "running",
+                          "export_completed_at": null
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Invalid token"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "User not found"
                 }
               }
             }
@@ -434,6 +608,18 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                },
+                "example": {
+                  "detail": [
+                    {
+                      "loc": [
+                        "query",
+                        "uid"
+                      ],
+                      "msg": "Field required",
+                      "type": "missing"
+                    }
+                  ]
                 }
               }
             }
@@ -498,52 +684,26 @@
         "description": "Request to create a new flow configuration via API."
       },
       "ExportStatusResponse": {
+        "type": "object",
+        "title": "ExportStatusResponse",
+        "description": "Per-provider export readiness for a partner user.",
         "properties": {
           "uid": {
             "type": "string",
             "title": "Uid"
           },
-          "data_ready": {
-            "type": "boolean",
-            "title": "Data Ready"
-          },
-          "data_landed_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Data Landed At"
-          },
-          "export_status": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Export Status"
-          },
-          "export_completed_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Export Completed At"
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProviderExportStatus"
+            },
+            "title": "Sources"
           }
         },
-        "type": "object",
-        "title": "ExportStatusResponse",
-        "description": "Response for export data status check."
+        "required": [
+          "uid",
+          "sources"
+        ]
       },
       "FlowConfigResponse": {
         "properties": {
@@ -640,6 +800,157 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "ConsentStatusItem": {
+        "type": "object",
+        "title": "ConsentStatusItem",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "title": "Scopes"
+          },
+          "window": {
+            "type": "string",
+            "title": "Window",
+            "description": "Consent window type (currently fixed)."
+          },
+          "valid_until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid Until"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "active or revoked"
+          },
+          "issued_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issued At"
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked At"
+          }
+        },
+        "required": [
+          "provider",
+          "scopes",
+          "window",
+          "valid_until",
+          "status",
+          "issued_at",
+          "revoked_at"
+        ]
+      },
+      "ConsentStatusResponse": {
+        "type": "object",
+        "title": "ConsentStatusResponse",
+        "description": "Consent state by provider for a partner user.",
+        "properties": {
+          "sub": {
+            "type": "string",
+            "title": "Sub"
+          },
+          "client_id": {
+            "type": "string",
+            "title": "Client Id"
+          },
+          "consents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConsentStatusItem"
+            },
+            "title": "Consents"
+          }
+        },
+        "required": [
+          "sub",
+          "client_id",
+          "consents"
+        ]
+      },
+      "ProviderExportStatus": {
+        "type": "object",
+        "title": "ProviderExportStatus",
+        "description": "Export status for a single provider.",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "data_ready": {
+            "type": "boolean",
+            "title": "Data Ready"
+          },
+          "data_landed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Landed At"
+          },
+          "export_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Export Status"
+          },
+          "export_completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Export Completed At"
+          }
+        },
+        "required": [
+          "provider",
+          "data_ready",
+          "data_landed_at",
+          "export_status",
+          "export_completed_at"
+        ]
       }
     },
     "securitySchemes": {

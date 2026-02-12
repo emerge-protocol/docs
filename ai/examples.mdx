@@ -217,8 +217,8 @@ if __name__ == '__main__':
 
 The AI finds the [Query Overview](/query/overview) and [Webhooks](/link/webhooks) pages:
 
-- Data is available **after export completes**. The export typically finishes in minutes and you receive an `export.completed` webhook when it is ready.
-- Until you receive the webhook, sync queries may return empty results. Handle this gracefully and retry with backoff.
+- Data is available **after export completes**. Poll `GET /export/status/{uid}` and wait until the required provider in `sources[]` is `data_ready: true`.
+- Until a provider is ready, sync queries may return empty results. Handle this gracefully and retry with backoff.
 
 ## Example 3: Debug a webhook signature issue
 
@@ -230,7 +230,7 @@ The AI finds the [Query Overview](/query/overview) and [Webhooks](/link/webhooks
 The AI checks [Webhooks](/link/webhooks) and points out the most common issues:
 
 1. **Raw body required** - sign the raw request body, not parsed JSON.
-2. **Header name** - use the `x-emerge-signature` header.
+2. **Header name** - use the `x-signature` header.
 3. **Comparison** - use constant-time comparison to avoid subtle mismatches.
 
 <CodeGroup>
@@ -249,7 +249,7 @@ if (!WEBHOOK_SECRET) {
 
 app.post('/webhooks/emerge', async (req, res) => {
   try {
-    const signature = req.header('x-emerge-signature');
+    const signature = req.header('x-signature');
     if (!signature) {
       return res.status(401).send('Missing signature');
     }
@@ -267,9 +267,9 @@ app.post('/webhooks/emerge', async (req, res) => {
     }
 
     const payload = JSON.parse(req.body.toString('utf8'));
-    const { event, data } = payload;
+    const { event, uid } = payload;
 
-    console.log(`Received ${event} for uid ${data?.uid}`);
+    console.log(`Received ${event} for uid ${uid}`);
     return res.status(200).send('OK');
   } catch (err) {
     console.error('Webhook error', err);
@@ -300,7 +300,7 @@ if not WEBHOOK_SECRET:
 
 @app.post('/webhooks/emerge')
 async def emerge_webhook(request: Request):
-    signature = request.headers.get('x-emerge-signature')
+    signature = request.headers.get('x-signature')
     if not signature:
         raise HTTPException(status_code=401, detail='Missing signature')
 
@@ -320,8 +320,8 @@ async def emerge_webhook(request: Request):
         raise HTTPException(status_code=400, detail='Invalid JSON') from exc
 
     event = payload.get('event')
-    data = payload.get('data', {})
-    print(f"Received {event} for uid {data.get('uid')}")
+    uid = payload.get('uid')
+    print(f"Received {event} for uid {uid}")
 
     return {'status': 'ok'}
 

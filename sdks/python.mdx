@@ -135,8 +135,8 @@ class EmergeLinkClient:
         """Get export status for a user.
 
         Returns:
-            dict with data_ready, data_landed_at, export_status,
-            export_completed_at fields
+            dict with uid and sources[] where each source contains:
+            provider, data_ready, data_landed_at, export_status, export_completed_at
         """
         response = requests.get(
             f'https://link.emergedata.ai/export/status/{uid}',
@@ -357,10 +357,7 @@ WebhookEvent = Literal[
     'consent.given',
     'consent.revoked',
     'consent.expiring',
-    'consent.completed',
-    'export.completed',
-    'export.failed',
-    'token.needs_reauth'
+    'consent.reauthorized'
 ]
 
 
@@ -368,7 +365,9 @@ WebhookEvent = Literal[
 class WebhookPayload:
     event: WebhookEvent
     timestamp: str
-    data: dict
+    uid: str
+    client_id: str
+    sources: list[dict]
 
 
 class EmergeWebhookHandler:
@@ -394,7 +393,9 @@ class EmergeWebhookHandler:
         return WebhookPayload(
             event=data['event'],
             timestamp=data['timestamp'],
-            data=data['data']
+            uid=data['uid'],
+            client_id=data['client_id'],
+            sources=data.get('sources', [])
         )
 ```
 
@@ -483,21 +484,19 @@ async def callback(request: Request):
 @app.post('/webhooks/emerge')
 async def webhook(request: Request):
     body = await request.body()
-    signature = request.headers.get('x-emerge-signature', '')
+    signature = request.headers.get('x-signature', '')
 
     try:
         payload = webhook_handler.parse_webhook(body, signature)
     except ValueError:
         raise HTTPException(status_code=401, detail='Invalid signature')
 
-    if payload.event == 'export.completed':
-        print(f"Data ready for user {payload.data['uid']}")
+    if payload.event == 'consent.given':
+        print(f"Consent granted for user {payload.uid}")
     elif payload.event == 'consent.revoked':
-        print(f"Consent revoked for user {payload.data['uid']}")
+        print(f"Consent revoked for user {payload.uid}")
     elif payload.event == 'consent.expiring':
-        print(f"Consent expiring for user {payload.data['uid']}")
-    elif payload.event == 'token.needs_reauth':
-        print(f"Token needs reauth for user {payload.data['uid']}")
+        print(f"Consent expiring for user {payload.uid}")
 
     return {'status': 'ok'}
 ```

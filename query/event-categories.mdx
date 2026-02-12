@@ -1,0 +1,130 @@
+---
+title: "Event Categories"
+description: "Category taxonomy used in Query API event data"
+---
+
+Query events use Google Topics-style category paths like `/Shopping/Apparel/Footwear`.  
+If you only need first-level categories, use the list below.
+
+## Authentication
+
+`GET /v1/sync/categories` requires:
+- `Authorization: Bearer <api_token>`
+
+## First-level categories
+
+| Category |
+|----------|
+| `Arts & Entertainment` |
+| `Autos & Vehicles` |
+| `Beauty & Fitness` |
+| `Books & Literature` |
+| `Business & Industrial` |
+| `Computers & Electronics` |
+| `Finance` |
+| `Food & Drink` |
+| `Games` |
+| `Hobbies & Leisure` |
+| `Home & Garden` |
+| `Internet & Telecom` |
+| `Jobs & Education` |
+| `Law & Government` |
+| `News` |
+| `Online Communities` |
+| `People & Society` |
+| `Pets & Animals` |
+| `Real Estate` |
+| `Shopping` |
+| `Sports` |
+| `Travel & Transportation` |
+
+## Endpoint
+
+Use `GET /v1/sync/categories` with a `table` value:
+- `searches`
+- `browsing`
+- `youtube`
+- `ads`
+- `receipts`
+
+### Response example
+
+```json
+{
+  "categories": [
+    "/Shopping/Apparel/Footwear",
+    "/Sports/Running & Walking",
+    "/Computers & Electronics/Software"
+  ]
+}
+```
+
+## Example implementation
+
+<CodeGroup>
+
+```typescript TypeScript
+async function getFirstLevelCategories(table: 'searches' | 'browsing' | 'youtube' | 'ads' | 'receipts') {
+  const response = await fetch(
+    `https://query.emergedata.ai/v1/sync/categories?table=${table}`,
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.EMERGE_API_TOKEN ?? ''}`
+      }
+    }
+  );
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Categories request failed (${response.status}): ${body}`);
+  }
+
+  const payload: { categories: string[] } = await response.json();
+  const roots = Array.from(
+    new Set(
+      payload.categories
+        .map((path) => path.replace(/^\/+/, '').split('/')[0]?.trim())
+        .filter((value): value is string => Boolean(value))
+    )
+  );
+
+  return roots.sort();
+}
+```
+
+```python Python
+import os
+import requests
+
+def get_first_level_categories(table: str) -> list[str]:
+    response = requests.get(
+        "https://query.emergedata.ai/v1/sync/categories",
+        params={"table": table},
+        headers={"Authorization": f"Bearer {os.environ['EMERGE_API_TOKEN']}"},
+        timeout=30
+    )
+    response.raise_for_status()
+
+    payload = response.json()
+    categories = payload.get("categories", [])
+    roots = sorted({
+        path.lstrip("/").split("/")[0].strip()
+        for path in categories
+        if isinstance(path, str) and path
+    })
+    return roots
+```
+
+</CodeGroup>
+
+## Gotchas
+
+- Category filters are subtree matches. `/Shopping` includes `/Shopping/...`.
+- `category` can be `null` on some records. Handle missing values in downstream logic.
+- Keep filtering server-side where possible to reduce payload size.
+
+## Related docs
+
+- [Query Overview](/query/overview)
+- [Data Schema](/query/data-schema)
+- [Pagination & Delta Queries](/query/pagination)

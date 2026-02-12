@@ -41,7 +41,7 @@ if (!WEBHOOK_SECRET) {
 
 app.post('/webhooks/emerge', async (req, res) => {
   try {
-    const signature = req.headers['x-emerge-signature'] as string | undefined;
+    const signature = req.headers['x-signature'] as string | undefined;
     if (!signature) {
       return res.status(401).send('Missing signature');
     }
@@ -51,16 +51,25 @@ app.post('/webhooks/emerge', async (req, res) => {
       .update(req.body)
       .digest('hex');
 
-    if (signature !== expected) {
+    const signatureBuf = Buffer.from(signature, 'hex');
+    const expectedBuf = Buffer.from(expected, 'hex');
+    const valid =
+      signatureBuf.length === expectedBuf.length &&
+      crypto.timingSafeEqual(signatureBuf, expectedBuf);
+
+    if (!valid) {
       console.error('Invalid webhook signature');
       return res.status(401).send('Invalid signature');
     }
 
-    const payload = JSON.parse(req.body.toString('utf8')) as { event?: string; data?: { uid?: string } };
-    const { event, data } = payload;
+    const payload = JSON.parse(req.body.toString('utf8')) as {
+      event?: string;
+      uid?: string;
+      sources?: Array<{ provider?: string }>;
+    };
 
-    if (event === 'consent.revoked' && data?.uid) {
-      await revokeLocalAccess(data.uid);
+    if (payload.event === 'consent.revoked' && payload.uid) {
+      await revokeLocalAccess(payload.uid, payload.sources ?? []);
     }
 
     return res.status(200).send('OK');
@@ -70,12 +79,16 @@ app.post('/webhooks/emerge', async (req, res) => {
   }
 });
 
-async function revokeLocalAccess(uid: string) {
-  await deleteUserData(uid);
+async function revokeLocalAccess(uid: string, sources: Array<{ provider?: string }>) {
+  for (const source of sources) {
+    if (source.provider) {
+      await deleteUserData(uid, source.provider);
+    }
+  }
 }
 
-async function deleteUserData(uid: string) {
-  console.log(`Deleting local data for ${uid}`);
+async function deleteUserData(uid: string, provider: string) {
+  console.log(`Deleting ${provider} data for ${uid}`);
 }
 
 app.listen(3000, () => {
@@ -100,7 +113,7 @@ if not WEBHOOK_SECRET:
 @app.post('/webhooks/emerge')
 async def emerge_webhook(request: Request):
     try:
-        signature = request.headers.get('x-emerge-signature')
+        signature = request.headers.get('x-signature')
         if not signature:
             raise HTTPException(status_code=401, detail='Missing signature')
         payload = await request.body()
@@ -116,10 +129,11 @@ async def emerge_webhook(request: Request):
 
         body = json.loads(payload)
         event = body.get('event')
-        data = body.get('data', {})
+        uid = body.get('uid')
+        sources = body.get('sources', [])
 
         if event == 'consent.revoked':
-            await revoke_local_access(data.get('uid'))
+            await revoke_local_access(uid, sources)
 
         return {'status': 'ok'}
     except HTTPException:
@@ -127,13 +141,16 @@ async def emerge_webhook(request: Request):
     except Exception as exc:
         raise HTTPException(status_code=500, detail='Server error') from exc
 
-async def revoke_local_access(uid: Optional[str]):
+async def revoke_local_access(uid: Optional[str], sources: list[dict]):
     if not uid:
         return
-    await delete_user_data(uid)
+    for source in sources:
+        provider = source.get('provider')
+        if provider:
+            await delete_user_data(uid, provider)
 
-async def delete_user_data(uid: str):
-    print(f'Deleting local data for {uid}')
+async def delete_user_data(uid: str, provider: str):
+    print(f'Deleting {provider} data for {uid}')
 ```
 
 </CodeGroup>

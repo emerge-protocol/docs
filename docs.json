@@ -39,16 +39,24 @@
       "url": "/"
     },
     {
-      "name": "Link API",
+      "name": "Link",
       "url": "/link"
     },
     {
-      "name": "Query API",
+      "name": "Query",
       "url": "/query"
     },
     {
-      "name": "AI Integration",
+      "name": "Ship with MCP",
       "url": "/ai"
+    },
+    {
+      "name": "The Control Room",
+      "url": "/control-room/overview"
+    },
+    {
+      "name": "The Data Wallet",
+      "url": "/data-wallet/overview"
     }
   ],
   "navigation": {
@@ -79,7 +87,7 @@
         ]
       },
       {
-        "tab": "Link API",
+        "tab": "Link",
         "groups": [
           {
             "group": "Guides",
@@ -105,13 +113,15 @@
         ]
       },
       {
-        "tab": "Query API",
+        "tab": "Query",
         "groups": [
           {
             "group": "Guides",
             "pages": [
               "query/overview",
-              "query/pagination"
+              "query/pagination",
+              "query/event-categories",
+              "query/data-schema"
             ]
           },
           {
@@ -131,6 +141,7 @@
             "group": "Sync Endpoints",
             "openapi": "openapi/query.json",
             "pages": [
+              "GET /v1/sync/categories",
               "GET /v1/sync/get_search",
               "GET /v1/sync/get_browsing",
               "GET /v1/sync/get_youtube",
@@ -141,7 +152,7 @@
         ]
       },
       {
-        "tab": "AI Integration",
+        "tab": "Ship with MCP",
         "groups": [
           {
             "group": "Getting Started",
@@ -167,12 +178,23 @@
         ]
       },
       {
-        "tab": "Data Wallet",
+        "tab": "The Control Room",
         "groups": [
           {
             "group": "Overview",
             "pages": [
-              "link/data-wallet"
+              "control-room/overview"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "The Data Wallet",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "data-wallet/overview"
             ]
           }
         ]

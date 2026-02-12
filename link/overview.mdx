@@ -20,7 +20,7 @@ sequenceDiagram
     Google->>User: Authenticate & consent
     User->>Emerge Link: Grant permissions
     Emerge Link->>Your App: Redirect with status
-    Emerge Link-->>Your App: Webhook: data ready
+    Emerge Link-->>Your App: Webhook: consent lifecycle event
 ```
 
 ## Flow states
@@ -35,10 +35,10 @@ When a user completes (or exits) the consent flow, they're redirected to your `r
 
 ## Try the demo
 
-Experience the consent flow firsthand:
+Preview the latest single-checkbox demo flow:
 
-<Card title="Demo Link" icon="play" href="https://link.emergedata.ai/demotest">
-  Open the demo consent flow (uses test credentials)
+<Card title="Wonderful AI" icon="play">
+  Endpoint coming next. This demo is configured for a single consent checkbox.
 </Card>
 
 ## Integration steps
@@ -57,7 +57,7 @@ Experience the consent flow firsthand:
     Process the redirect callback and verify the state parameter.
   </Step>
   <Step title="Set up webhooks">
-    Receive notifications when user data is ready to query.
+    Receive consent lifecycle events (for example revocations and reauthorizations).
   </Step>
 </Steps>
 
@@ -72,7 +72,7 @@ The consent flow presents users with:
 1. **Partner context** - Your company name and logo
 2. **Data explanation** - What data will be shared and why
 3. **Google OAuth** - Standard Google authentication
-4. **Consent confirmation** - Explicit consent checkboxes
+4. **Consent confirmation** - Explicit consent checkbox
 
 The flow is designed for compliance with GDPR, CCPA, and Google's data portability requirements.
 

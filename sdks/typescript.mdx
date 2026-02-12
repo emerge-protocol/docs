@@ -154,10 +154,14 @@ class EmergeLinkClient {
    * Get export status for a user
    */
   async getExportStatus(uid: string): Promise<{
-    data_ready: boolean;
-    data_landed_at?: string;
-    export_status: string;
-    export_completed_at?: string;
+    uid: string;
+    sources: Array<{
+      provider: string;
+      data_ready: boolean;
+      data_landed_at?: string | null;
+      export_status?: string | null;
+      export_completed_at?: string | null;
+    }>;
   }> {
     const response = await fetch(
       `https://link.emergedata.ai/export/status/${uid}`,
@@ -197,51 +201,71 @@ interface QueryResult<T> {
 }
 
 interface SearchEntry {
-  event_id: string;
-  query: string;
+  user_id: string;
+  event_id: number;
+  url: string | null;
+  title: string | null;
+  query: string | null;
+  intent: string | null;
+  category: string | null;
+  brands: string[];
   timestamp: string;
-  source: string;
   ingested_at: string;
 }
 
 interface BrowsingEntry {
-  event_id: string;
-  url: string;
-  title: string;
+  user_id: string;
+  event_id: number;
+  url: string | null;
+  title: string | null;
+  page_category: string | null;
+  category: string | null;
+  brands: string[];
   timestamp: string;
   ingested_at: string;
 }
 
 interface YoutubeEntry {
-  event_id: string;
-  video_id: string;
-  title: string;
-  channel: string;
+  user_id: string;
+  event_id: number;
+  url: string | null;
+  title: string | null;
+  category: string | null;
+  brands: string[];
   timestamp: string;
   ingested_at: string;
 }
 
 interface AdsEntry {
-  event_id: string;
-  advertiser: string;
-  ad_type: string;
+  user_id: string;
+  event_id: number;
+  source_domain: string | null;
+  landing_domain: string | null;
+  url: string | null;
+  title: string | null;
+  category: string | null;
+  brands: Array<string | null>;
+  ad_network: string | null;
   timestamp: string;
   ingested_at: string;
 }
 
 interface ReceiptsEntry {
+  user_id: string;
   event_id: number;
-  retailer_name: string;
-  total_value: number;
-  receipt_currency: string;
+  subject: string | null;
+  retailer_name: string | null;
+  receipt_currency: string | null;
+  total_value: number | null;
+  category: string | null;
+  brands: Array<string | null>;
   items: Array<{
-    name: string;
-    quantity: number;
-    unit_price: number;
-    brand: string;
-    category: string;
+    name: string | null;
+    quantity: number | null;
+    unit_price: number | null;
+    brand: string | null;
+    category: string | null;
   }>;
-  brands: string[];
   timestamp: string;
   ingested_at: string;
 }
@@ -358,15 +382,14 @@ type WebhookEvent =
   | 'consent.given'
   | 'consent.revoked'
   | 'consent.expiring'
-  | 'consent.completed'
-  | 'export.completed'
-  | 'export.failed'
-  | 'token.needs_reauth';
+  | 'consent.reauthorized';
 
 interface WebhookPayload {
   event: WebhookEvent;
   timestamp: string;
-  data: Record<string, unknown>;
+  uid: string;
+  client_id: string;
+  sources: Array<Record<string, unknown>>;
 }
 
 class EmergeWebhookHandler {
@@ -385,10 +408,14 @@ class EmergeWebhookHandler {
       .update(payload)
       .digest('hex');
 
-    return crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expected)
-    );
+    const signatureBuf = Buffer.from(signature, 'hex');
+    const expectedBuf = Buffer.from(expected, 'hex');
+
+    if (signatureBuf.length !== expectedBuf.length) {
+      return false;
+    }
+
+    return crypto.timingSafeEqual(signatureBuf, expectedBuf);
   }
 
   /**
@@ -486,17 +513,17 @@ app.get('/emerge/callback', async (req, res) => {
 
 // Handle webhooks
 app.post('/webhooks/emerge', express.raw({ type: 'application/json' }), (req, res) => {
-  const signature = req.headers['x-emerge-signature'] as string;
+  const signature = req.headers['x-signature'] as string;
 
   try {
     const payload = webhookHandler.parseWebhook(req.body, signature);
 
     switch (payload.event) {
-      case 'export.completed':
-        console.log(`Data ready for user ${payload.data.uid}`);
+      case 'consent.given':
+        console.log(`Consent granted for user ${payload.uid}`);
         break;
       case 'consent.revoked':
-        console.log(`Consent revoked for user ${payload.data.uid}`);
+        console.log(`Consent revoked for user ${payload.uid}`);
         break;
       // Handle other events...
     }

@@ -10,7 +10,7 @@ Documentation for Emerge API - a privacy-first API for accessing consented user 
 - Theme: maple with Emerge brand colors (primary: #e36c35, light: #ff4f1a, dark: #2e1205)
 - Branding: Mintlify footer branding hidden (`branding.hide: true` in docs.json + CSS selector in style.css)
 - Custom styles: style.css - Logo sized to 32px height, Mintlify "Powered by" footer hidden via CSS
-- OpenAPI specs: openapi/link.json and openapi/query.json (v0.0.10 spec changes as of 2026-01-28: removed flow_version, added flow_config, event_id type: integer)
+- OpenAPI specs: openapi/link.json and openapi/query.json (v0.0.11 spec changes as of 2026-02-12: webhook v2 payload, consent/export status updates, categories endpoint examples)
 - AI integration: MCP (Model Context Protocol) enabled
 - Local dev: `mint dev` (requires global CLI: `npm i -g mint`)
 - Preview URL: http://localhost:3000
@@ -23,16 +23,18 @@ Documentation for Emerge API - a privacy-first API for accessing consented user 
 
 ### Main sections (tabs in docs.json)
 - **Guides** (`/`) - Getting started, quickstart, SDKs, changelog
-- **Link API** (`/link/`) - Consent flow integration (authentication, signed URLs, callbacks, webhooks)
-- **Query API** (`/query/`) - Data retrieval (sync/async patterns, pagination)
-- **AI Integration** (`/ai/`) - MCP setup, contextual menu, examples, tool-specific guides
+- **Link** (`/link/`) - Consent flow integration (authentication, signed URLs, callbacks, webhooks)
+- **Query** (`/query/`) - Data retrieval (sync/async patterns, pagination, categories, schema)
+- **Ship with MCP** (`/ai/`) - MCP setup, contextual menu, examples, tool-specific guides
+- **The Control Room** (`/control-room/overview`) - Dashboard configuration and operational workflows
+- **The Data Wallet** (`/data-wallet/overview`) - End-user revocation and transparency workflows
 
 ### Key files
 - `index.mdx` - Homepage with product overview and navigation
 - `quickstart.mdx` - Lightning-fast integration guide with upfront AI tool setup section (MCP integration for Cursor, Claude Code, VS Code) at the beginning before prerequisites
 - `AGENTS.md` - AI-specific documentation guidelines (code examples, API patterns, terminology)
 - `CLAUDE.md` - This file - project memory for AI agents
-- `changelog.mdx` - Version history (current: v0.0.10 as of 2026-01-28)
+- `changelog.mdx` - Version history (current: v0.0.11 as of 2026-02-12)
 - `docs.json` - Navigation structure, Mintlify configuration, theme colors (maple theme with Emerge branding), support email: account@emergedata.ai
 - `openapi/link.json` - OpenAPI 3.1 spec for Link API reference, contact email: account@emergedata.ai (auto-synced from atlas; do not edit manually)
 - `openapi/query.json` - OpenAPI 3.1 spec for Query API reference, contact email: account@emergedata.ai (auto-synced from atlas; do not edit manually)
@@ -84,9 +86,9 @@ Every endpoint must document:
 - Async: Batch up to 25 users, date range with begin/end, results as Parquet file via S3 presigned URL
 
 **Webhooks:**
-- Event types: `consent.given`, `consent.revoked`, `consent.expiring`, `consent.completed`, `export.completed`, `export.failed`, `token.needs_reauth`
-- HMAC-SHA256 signature verification (X-Emerge-Signature header)
-- Payload includes event, timestamp, data object with uid, client_id, provider
+- Event types: `consent.given`, `consent.revoked`, `consent.expiring`, `consent.reauthorized`
+- HMAC-SHA256 signature verification (`X-Signature` header)
+- Payload includes top-level `uid`, `client_id`, and provider-specific `sources[]`
 
 ## Content strategy
 - Document just enough for user success
@@ -107,8 +109,8 @@ description: Concise summary for SEO/navigation
 
 ## File organization
 - `/link/*.mdx` - Link API guides (overview, authentication, create-link, callbacks, webhooks)
-- `/query/*.mdx` - Query API guides (overview, pagination)
-- `/ai/*.mdx` - AI integration docs (overview, mcp-docs-setup, mcp-query-setup, mcp-query-tools, contextual-menu, examples)
+- `/query/*.mdx` - Query guides (overview, pagination, event-categories, data-schema)
+- `/ai/*.mdx` - Ship with MCP docs (overview, mcp-docs-setup, mcp-query-setup, mcp-query-tools, contextual-menu, examples)
 - `/ai-tools/*.mdx` - AI tool-specific setup guides (claude-code, cursor, windsurf) [Note: Directory exists in git but not filesystem - may be template content]
 - `/sdks/*.mdx` - SDK implementations (TypeScript, Python) - Copy-paste reference implementations
 - `/api-reference/` - Legacy API reference pages (deprecated - use OpenAPI auto-generated pages)
@@ -175,8 +177,8 @@ mint validate
 
 ### Link API endpoints
 - `POST /configs` - Create/update consent flow configuration (required: config_name, company_name, logo_url, privacy_policy_url, is_default; optional: webhook_url, flow_config)
-- `GET /consent/status/{uid}` - Returns array of consents with provider, scopes, valid_until, status, issued_at
-- `GET /export/status/{uid}` - Returns data_ready boolean, data_landed_at, export_status, export_completed_at
+- `GET /consent/status/{uid}` - Returns `sub`, `client_id`, and provider-level `consents[]`
+- `GET /export/status/{uid}` - Returns provider-level readiness in `sources[]`
 - Link URL: `/link/start?` with parameters: client_id, redirect_uri, state, timestamp (ISO 8601), signature, optional: uid, flow_config
 
 ### Query API endpoints

@@ -1,0 +1,193 @@
+---
+title: "Data Schema"
+description: "Field-level schema for Query API event records"
+---
+
+Use this page as the canonical schema reference for Query API payloads.
+
+## Sync response envelope
+
+All sync endpoints return:
+
+```json
+{
+  "data": [],
+  "count": 0,
+  "next_cursor": null,
+  "has_more": false,
+  "applied_ingested_end": "2026-02-12T09:10:11Z"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `data` | array | Event records for the endpoint |
+| `count` | integer | Number of records returned |
+| `next_cursor` | string \| null | Cursor for next page |
+| `has_more` | boolean | Whether more records exist |
+| `applied_ingested_end` | ISO 8601 \| null | Effective ingestion cutoff used by server |
+
+## Common event fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `user_id` | string | Partner user identifier (`uid`) |
+| `event_id` | integer | Stable event id for deduplication |
+| `timestamp` | ISO 8601 | Event timestamp |
+| `ingested_at` | ISO 8601 | Ingestion timestamp in Emerge |
+| `category` | string \| null | Google Topics taxonomy path (for example `/Shopping/...`) |
+
+## Per-endpoint event schemas
+
+### Search (`/v1/sync/get_search`)
+
+Additional fields:
+- `url`: string \| null
+- `title`: string \| null
+- `query`: string \| null
+- `intent`: string \| null
+- `brands`: string[]
+
+Response example:
+
+```json
+{
+  "data": [
+    {
+      "user_id": "psub_d4e5f6789012345678901234abcdef01",
+      "event_id": 102938,
+      "timestamp": "2026-02-10T08:22:11Z",
+      "ingested_at": "2026-02-10T08:23:40Z",
+      "url": "https://www.google.com/search?q=running+shoes",
+      "title": "running shoes - Google Search",
+      "query": "running shoes",
+      "intent": "transactional",
+      "category": "/Shopping/Apparel/Footwear",
+      "brands": ["Nike"]
+    }
+  ],
+  "count": 1,
+  "next_cursor": null,
+  "has_more": false,
+  "applied_ingested_end": "2026-02-12T09:10:11Z"
+}
+```
+
+### Browsing (`/v1/sync/get_browsing`)
+
+Additional fields:
+- `url`: string \| null
+- `title`: string \| null
+- `page_category`: string \| null
+- `brands`: string[]
+
+### YouTube (`/v1/sync/get_youtube`)
+
+Additional fields:
+- `url`: string \| null
+- `title`: string \| null
+- `brands`: string[]
+
+### Ads (`/v1/sync/get_ads`)
+
+Additional fields:
+- `source_domain`: string \| null
+- `landing_domain`: string \| null
+- `url`: string \| null
+- `title`: string \| null
+- `brands`: (string \| null)[]
+- `ad_network`: string \| null
+
+### Receipts (`/v1/sync/get_receipts`)
+
+Additional fields:
+- `subject`: string \| null
+- `retailer_name`: string \| null
+- `receipt_currency`: string \| null
+- `total_value`: number \| null
+- `items`: `ReceiptItem[]`
+- `brands`: (string \| null)[]
+
+`ReceiptItem`:
+- `name`: string \| null
+- `quantity`: integer \| null
+- `unit_price`: number \| null
+- `brand`: string \| null
+- `category`: string \| null
+
+## Type-safe parsing examples
+
+<CodeGroup>
+
+```typescript TypeScript
+type SyncEnvelope<T> = {
+  data: T[];
+  count: number;
+  next_cursor: string | null;
+  has_more: boolean;
+  applied_ingested_end: string | null;
+};
+
+type SearchEvent = {
+  user_id: string;
+  event_id: number;
+  timestamp: string;
+  ingested_at: string;
+  url: string | null;
+  title: string | null;
+  query: string | null;
+  intent: string | null;
+  category: string | null;
+  brands: string[];
+};
+
+async function fetchSearch(uid: string): Promise<SyncEnvelope<SearchEvent>> {
+  const response = await fetch(
+    `https://query.emergedata.ai/v1/sync/get_search?uid=${encodeURIComponent(uid)}`,
+    { headers: { Authorization: `Bearer ${process.env.EMERGE_API_TOKEN ?? ''}` } }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Search request failed (${response.status})`);
+  }
+
+  const payload = (await response.json()) as SyncEnvelope<SearchEvent>;
+  return payload;
+}
+```
+
+```python Python
+from typing import Any, TypedDict
+import os
+import requests
+
+class SearchEvent(TypedDict):
+    user_id: str
+    event_id: int
+    timestamp: str
+    ingested_at: str
+    url: str | None
+    title: str | None
+    query: str | None
+    intent: str | None
+    category: str | None
+    brands: list[str]
+
+def fetch_search(uid: str) -> dict[str, Any]:
+    response = requests.get(
+        "https://query.emergedata.ai/v1/sync/get_search",
+        params={"uid": uid},
+        headers={"Authorization": f"Bearer {os.environ['EMERGE_API_TOKEN']}"},
+        timeout=30
+    )
+    response.raise_for_status()
+    return response.json()
+```
+
+</CodeGroup>
+
+## Related docs
+
+- [Query Overview](/query/overview)
+- [Event Categories](/query/event-categories)
+- [Pagination & Delta Queries](/query/pagination)

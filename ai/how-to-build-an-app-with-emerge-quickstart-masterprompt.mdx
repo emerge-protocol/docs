@@ -158,7 +158,7 @@ function buildStatusUrl(template: string, uid: string): string {
   return template;
 }
 
-async function pollExportReady(uid: string): Promise<void> {
+async function pollExportReady(uid: string, provider: 'google_data' | 'gmail' = 'google_data'): Promise<void> {
   const { exportStatusUrl } = loadConfig();
   const token = process.env.EMERGE_API_TOKEN;
   if (!token) {
@@ -179,8 +179,11 @@ async function pollExportReady(uid: string): Promise<void> {
       throw new Error(`Export status failed (${response.status}): ${body}`);
     }
 
-    const status = await response.json();
-    if (status?.data_ready === true) {
+    const status = await response.json() as {
+      sources?: Array<{ provider: string; data_ready: boolean }>;
+    };
+    const source = status.sources?.find((item) => item.provider === provider);
+    if (source?.data_ready === true) {
       return;
     }
 
@@ -199,7 +202,8 @@ app.get('/query-search', async (req, res) => {
       return res.status(404).send('User not connected');
     }
 
-    await pollExportReady(emergeUid);
+    const exportProvider = (process.env.EMERGE_EXPORT_PROVIDER as 'google_data' | 'gmail' | undefined) || 'google_data';
+    await pollExportReady(emergeUid, exportProvider);
 
     const { querySearchUrl } = loadConfig();
     const url = new URL(querySearchUrl);
@@ -336,7 +340,7 @@ def build_status_url(template: str, uid: str) -> str:
     return template
 
 
-async def poll_export_ready(uid: str) -> None:
+async def poll_export_ready(uid: str, provider: str = "google_data") -> None:
     config = load_config()
     token = os.getenv("EMERGE_API_TOKEN")
     if not token:
@@ -355,7 +359,11 @@ async def poll_export_ready(uid: str) -> None:
             response.raise_for_status()
             payload = response.json()
 
-            if payload.get("data_ready") is True:
+            source = next(
+                (item for item in payload.get("sources", []) if item.get("provider") == provider),
+                None
+            )
+            if source and source.get("data_ready") is True:
                 return
 
             await asyncio.sleep(base_delay * attempt)
@@ -406,7 +414,8 @@ async def query_search(user_id: str):
         raise HTTPException(status_code=500, detail="Missing EMERGE_API_TOKEN")
 
     try:
-        await poll_export_ready(emerge_uid)
+        export_provider = os.getenv("EMERGE_EXPORT_PROVIDER", "google_data")
+        await poll_export_ready(emerge_uid, export_provider)
         async with httpx.AsyncClient(timeout=30) as client:
             response = await client.get(
                 config["query_search_url"],

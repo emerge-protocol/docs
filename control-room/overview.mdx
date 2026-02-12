@@ -1,0 +1,88 @@
+---
+title: "Control Room Overview"
+description: "Manage credentials, flow configs, and webhooks in the Control Room"
+---
+
+Use the Control Room at [dashboard.emergedata.ai](https://dashboard.emergedata.ai) to manage your Link + Query integration lifecycle.
+
+## What you manage in the Control Room
+
+- API credentials (`client_id`, `signing_secret`, API token)
+- Flow branding (`flow_config`, logo, privacy policy)
+- Webhook destinations and event subscriptions
+- Team/admin access
+
+## Authentication context
+
+Actions in Control Room map to API-authenticated operations:
+- Link API base: `https://link.emergedata.ai`
+- Query API base: `https://query.emergedata.ai`
+- Auth header: `Authorization: Bearer <api_token>`
+
+## Response example: flow configs
+
+`GET /configs` response:
+
+```json
+[
+  {
+    "config_id": "cfg_30bfe2ca",
+    "config_name": "default",
+    "company_name": "Wonderful AI",
+    "logo_url": "https://assets.emergedata.ai/logo/wonderful-ai.png",
+    "privacy_policy_url": "https://wonderful.ai/privacy",
+    "webhook_url": "https://api.wonderful.ai/webhooks/emerge",
+    "flow_version": "emerge",
+    "is_default": true,
+    "preview_url": "https://link.emergedata.ai/preview/ck_live_123?flow_config=default"
+  }
+]
+```
+
+## API parity examples
+
+<CodeGroup>
+
+```typescript TypeScript
+async function listFlowConfigs(apiToken: string) {
+  const response = await fetch("https://link.emergedata.ai/configs", {
+    headers: {
+      Authorization: `Bearer ${apiToken}`
+    }
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Failed to list configs (${response.status}): ${body}`);
+  }
+
+  return response.json();
+}
+```
+
+```python Python
+import requests
+
+def list_flow_configs(api_token: str) -> list[dict]:
+    response = requests.get(
+        "https://link.emergedata.ai/configs",
+        headers={"Authorization": f"Bearer {api_token}"},
+        timeout=30
+    )
+    response.raise_for_status()
+    return response.json()
+```
+
+</CodeGroup>
+
+## Gotchas
+
+- Treat Control Room credentials as production secrets. Never embed them in frontend code.
+- Rotate credentials after team changes.
+- Keep redirect URIs and webhook URLs environment-specific to avoid data leaks.
+
+## Related docs
+
+- [Create Signed Links](/link/create-link)
+- [Webhooks](/link/webhooks)
+- [Ship with MCP](/ai/overview)
