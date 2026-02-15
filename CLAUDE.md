@@ -1,7 +1,7 @@
 # Emerge API Documentation
 
 ## Project overview
-Documentation for Emerge API - a privacy-first API for accessing consented user data. The project includes Link API (consent collection) and Query API (data retrieval).
+Documentation for Emerge API - a privacy-first API for accessing consented user data. The project includes Link (consent collection) and Query API (data retrieval).
 
 ## Technical stack
 - Format: MDX files with YAML frontmatter
@@ -108,7 +108,7 @@ description: Concise summary for SEO/navigation
 ```
 
 ## File organization
-- `/link/*.mdx` - Link API guides (overview, authentication, create-link, callbacks, webhooks)
+- `/link/*.mdx` - Link guides (overview, authentication, create-link, callbacks, webhooks)
 - `/query/*.mdx` - Query guides (overview, pagination, event-categories, data-schema)
 - `/ai/*.mdx` - Ship with MCP docs (overview, mcp-docs-setup, mcp-query-setup, mcp-query-tools, contextual-menu, examples)
 - `/ai-tools/*.mdx` - AI tool-specific setup guides (claude-code, cursor, windsurf) [Note: Directory exists in git but not filesystem - may be template content]
@@ -175,7 +175,7 @@ mint validate
 | Ad Interactions | `/v1/sync/get_ads` | `/v1/ads` | Ad clicks and views |
 | Receipts | `/v1/sync/get_receipts` | `/v1/receipts` | Purchase receipts with items and brands |
 
-### Link API endpoints
+### Link endpoints
 - `POST /configs` - Create/update consent flow configuration (required: config_name, company_name, logo_url, privacy_policy_url, is_default; optional: webhook_url, flow_config)
 - `GET /consent/status/{uid}` - Returns `sub`, `client_id`, and provider-level `consents[]`
 - `GET /export/status/{uid}` - Returns provider-level readiness in `sources[]`
@@ -203,7 +203,7 @@ mint validate
 - "event_id" - Integer type in Query API responses (not string)
 
 ## API domains
-- Link API: https://link.emergedata.ai
+- Link: https://link.emergedata.ai
 - Query API: https://query.emergedata.ai
 - Dashboard: https://dashboard.emergedata.ai
 - MCP Server: https://docs.emergedata.ai/mcp (AI tool integration - updated from emerge.mintlify.dev)
