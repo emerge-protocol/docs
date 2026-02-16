@@ -175,7 +175,7 @@ mint validate
 | Ad Interactions | `/v1/sync/get_ads` | `/v1/ads` | Ad clicks and views |
 | Receipts | `/v1/sync/get_receipts` | `/v1/receipts` | Purchase receipts with items and brands |
 
-### Link endpoints
+### Link API endpoints
 - `POST /configs` - Create/update consent flow configuration (required: config_name, company_name, logo_url, privacy_policy_url, is_default; optional: webhook_url, flow_config)
 - `GET /consent/status/{uid}` - Returns `sub`, `client_id`, and provider-level `consents[]`
 - `GET /export/status/{uid}` - Returns provider-level readiness in `sources[]`
@@ -203,7 +203,7 @@ mint validate
 - "event_id" - Integer type in Query API responses (not string)
 
 ## API domains
-- Link: https://link.emergedata.ai
+- Link API: https://link.emergedata.ai
 - Query API: https://query.emergedata.ai
 - Dashboard: https://dashboard.emergedata.ai
 - MCP Server: https://docs.emergedata.ai/mcp (AI tool integration - updated from emerge.mintlify.dev)
