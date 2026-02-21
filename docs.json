@@ -119,6 +119,7 @@
             "group": "Guides",
             "pages": [
               "query/overview",
+              "query/mcp-access",
               "query/pagination",
               "query/event-categories",
               "query/data-schema"
