@@ -101,7 +101,9 @@ jobs:
           )
 
           echo "Registering task definition..."
-          aws ecs register-task-definition --cli-input-json "$TASK_DEF" > /dev/null
+          TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json "$TASK_DEF" \
+            --query 'taskDefinition.taskDefinitionArn' --output text)
+          echo "Registered: $TASK_DEF_ARN"
 
           # --- Create or reuse target group ---
           TG_ARN=$(aws elbv2 describe-target-groups \
@@ -143,13 +145,10 @@ jobs:
           if [ -z "$EXISTING_RULE" ] || [ "$EXISTING_RULE" = "None" ]; then
             echo "Creating listener rule for ${HOSTNAME}..."
 
-            # Find next available priority
-            MAX_PRIORITY=$(aws elbv2 describe-rules \
-              --listener-arn "$LISTENER_ARN" \
-              --query 'max(Rules[?Priority!=`default`].Priority)' \
-              --output text 2>/dev/null || echo "0")
-            [ "$MAX_PRIORITY" = "None" ] || [ -z "$MAX_PRIORITY" ] && MAX_PRIORITY=0
-            PRIORITY=$((MAX_PRIORITY + 1))
+            # Use PR number as deterministic priority — avoids race conditions between
+            # concurrent deployments and the operator-precedence bug in max()+1 logic.
+            # PR numbers are unique and well within the ALB limit of 50000.
+            PRIORITY="$PR_NUMBER"
 
             aws elbv2 create-rule \
               --listener-arn "$LISTENER_ARN" \

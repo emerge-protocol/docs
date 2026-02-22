@@ -48,15 +48,30 @@ jobs:
 
           for SERVICE_ARN in $SERVICES; do
             SERVICE_NAME=$(echo "$SERVICE_ARN" | awk -F'/' '{print $NF}')
-            PR_NUMBER=$(echo "$SERVICE_NAME" | sed 's/docs-preview-pr-//')
 
-            # Validate we extracted a number
-            if ! echo "$PR_NUMBER" | grep -qE '^[0-9]+$'; then
+            # Extract PR number only from services matching the exact pattern
+            if [[ "$SERVICE_NAME" =~ ^docs-preview-pr-([0-9]+)$ ]]; then
+              PR_NUMBER="${BASH_REMATCH[1]}"
+            else
               echo "Skipping non-preview service: $SERVICE_NAME"
               continue
             fi
 
-            PR_STATE=$(gh pr view "$PR_NUMBER" --json state --jq '.state' 2>/dev/null || echo "UNKNOWN")
+            PR_STATE=""
+            PR_ERR=$(mktemp)
+            if ! PR_STATE=$(gh pr view "$PR_NUMBER" --json state --jq '.state' 2>"$PR_ERR"); then
+              PR_ERROR_MSG=$(cat "$PR_ERR")
+              rm -f "$PR_ERR"
+              if echo "$PR_ERROR_MSG" | grep -qiE 'Could not resolve to a PullRequest|not found'; then
+                # PR genuinely doesn't exist — safe to clean up
+                PR_STATE="MERGED"
+              else
+                echo "Warning: could not determine state for PR #${PR_NUMBER}: $PR_ERROR_MSG"
+                echo "Skipping to avoid false-positive cleanup"
+                continue
+              fi
+            fi
+            rm -f "$PR_ERR"
 
             if [ "$PR_STATE" != "OPEN" ]; then
               echo "PR #${PR_NUMBER} is ${PR_STATE} — cleaning up service ${SERVICE_NAME}..."

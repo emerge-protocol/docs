@@ -12,12 +12,20 @@ mintlify dev --port 3000 &
 MINT_PID=$!
 
 # Wait for the server to become ready (up to 120s)
+READY=0
 for i in $(seq 1 60); do
   if curl -sf http://localhost:3000/ > /dev/null 2>&1; then
+    READY=1
     break
   fi
   sleep 2
 done
+
+if [ "$READY" -eq 0 ]; then
+  echo "Mintlify dev server did not become ready in 120s — exiting"
+  kill "$MINT_PID" 2>/dev/null || true
+  exit 1
+fi
 
 # Check if it's reachable on 0.0.0.0 (not just localhost)
 if curl -sf http://0.0.0.0:3000/ > /dev/null 2>&1; then
@@ -25,8 +33,16 @@ if curl -sf http://0.0.0.0:3000/ > /dev/null 2>&1; then
   wait $MINT_PID
 else
   echo "Mintlify bound to localhost only — starting socat proxy"
-  kill $MINT_PID 2>/dev/null || true
-  sleep 2
+
+  # Graceful kill with force fallback
+  kill "$MINT_PID" 2>/dev/null || true
+  for i in $(seq 1 5); do
+    if ! kill -0 "$MINT_PID" 2>/dev/null; then
+      break
+    fi
+    sleep 1
+  done
+  kill -9 "$MINT_PID" 2>/dev/null || true
 
   # Restart without HOSTNAME override on a different port
   unset HOSTNAME
@@ -34,12 +50,20 @@ else
   MINT_PID=$!
 
   # Wait for mint to be ready on localhost:3001
+  READY=0
   for i in $(seq 1 60); do
     if curl -sf http://127.0.0.1:3001/ > /dev/null 2>&1; then
+      READY=1
       break
     fi
     sleep 2
   done
+
+  if [ "$READY" -eq 0 ]; then
+    echo "Mintlify dev server on port 3001 did not become ready in 120s — exiting"
+    kill "$MINT_PID" 2>/dev/null || true
+    exit 1
+  fi
 
   # Proxy external traffic to the localhost-bound server
   echo "Proxying 0.0.0.0:3000 -> 127.0.0.1:3001"
