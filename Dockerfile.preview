@@ -1,0 +1,20 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install mintlify CLI and socat (fallback for localhost binding)
+RUN npm install -g mintlify@latest && \
+    apk add --no-cache socat curl
+
+# Copy docs content
+COPY . .
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=120s --retries=3 \
+  CMD curl -f http://localhost:3000/ || exit 1
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+CMD ["/entrypoint.sh"]

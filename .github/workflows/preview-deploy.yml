@@ -1,0 +1,239 @@
+name: Deploy Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: eu-central-1
+  ECR_REPOSITORY: docs-preview
+  ECS_CLUSTER: docs-preview
+  PREVIEW_DOMAIN: docs-preview.emergedata.ai
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PREVIEW_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: pr-${{ github.event.pull_request.number }}
+        run: |
+          docker build -f Dockerfile.preview \
+            -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+      - name: Deploy preview environment
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          LISTENER_ARN: ${{ secrets.PREVIEW_LISTENER_ARN }}
+          TASK_EXECUTION_ROLE_ARN: ${{ secrets.PREVIEW_TASK_EXECUTION_ROLE_ARN }}
+          VPC_ID: ${{ secrets.PREVIEW_VPC_ID }}
+          SUBNET_IDS: ${{ secrets.PREVIEW_SUBNET_IDS }}
+          TASK_SG_ID: ${{ secrets.PREVIEW_TASK_SG_ID }}
+        run: |
+          set -euo pipefail
+
+          SERVICE_NAME="docs-preview-pr-${PR_NUMBER}"
+          TG_NAME="docs-pr-${PR_NUMBER}"
+          HOSTNAME="pr-${PR_NUMBER}.${PREVIEW_DOMAIN}"
+          IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:pr-${PR_NUMBER}"
+
+          # --- Register task definition ---
+          TASK_DEF=$(cat <<EOF
+          {
+            "family": "${SERVICE_NAME}",
+            "requiresCompatibilities": ["FARGATE"],
+            "networkMode": "awsvpc",
+            "cpu": "512",
+            "memory": "1024",
+            "executionRoleArn": "${TASK_EXECUTION_ROLE_ARN}",
+            "containerDefinitions": [{
+              "name": "mintlify",
+              "image": "${IMAGE}",
+              "essential": true,
+              "portMappings": [{
+                "containerPort": 3000,
+                "hostPort": 3000,
+                "protocol": "tcp"
+              }],
+              "healthCheck": {
+                "command": ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"],
+                "interval": 15,
+                "timeout": 5,
+                "retries": 3,
+                "startPeriod": 120
+              },
+              "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                  "awslogs-group": "/ecs/docs-preview",
+                  "awslogs-region": "${AWS_REGION}",
+                  "awslogs-stream-prefix": "pr-${PR_NUMBER}"
+                }
+              }
+            }]
+          }
+          EOF
+          )
+
+          echo "Registering task definition..."
+          aws ecs register-task-definition --cli-input-json "$TASK_DEF" > /dev/null
+
+          # --- Create or reuse target group ---
+          TG_ARN=$(aws elbv2 describe-target-groups \
+            --names "$TG_NAME" \
+            --query 'TargetGroups[0].TargetGroupArn' \
+            --output text 2>/dev/null || echo "None")
+
+          if [ "$TG_ARN" = "None" ] || [ -z "$TG_ARN" ]; then
+            echo "Creating target group ${TG_NAME}..."
+            TG_ARN=$(aws elbv2 create-target-group \
+              --name "$TG_NAME" \
+              --protocol HTTP \
+              --port 3000 \
+              --vpc-id "$VPC_ID" \
+              --target-type ip \
+              --health-check-enabled \
+              --health-check-path "/" \
+              --health-check-interval-seconds 30 \
+              --health-check-timeout-seconds 10 \
+              --healthy-threshold-count 2 \
+              --unhealthy-threshold-count 3 \
+              --tags "Key=Service,Value=docs-preview" "Key=PR,Value=${PR_NUMBER}" \
+              --query 'TargetGroups[0].TargetGroupArn' \
+              --output text)
+
+            aws elbv2 modify-target-group-attributes \
+              --target-group-arn "$TG_ARN" \
+              --attributes "Key=deregistration_delay.timeout_seconds,Value=30" > /dev/null
+          else
+            echo "Target group ${TG_NAME} already exists"
+          fi
+
+          # --- Create or reuse listener rule ---
+          EXISTING_RULE=$(aws elbv2 describe-rules \
+            --listener-arn "$LISTENER_ARN" \
+            --query "Rules[?Conditions[?HostHeaderConfig.Values[?contains(@, '${HOSTNAME}')]]].RuleArn" \
+            --output text 2>/dev/null || echo "")
+
+          if [ -z "$EXISTING_RULE" ] || [ "$EXISTING_RULE" = "None" ]; then
+            echo "Creating listener rule for ${HOSTNAME}..."
+
+            # Find next available priority
+            MAX_PRIORITY=$(aws elbv2 describe-rules \
+              --listener-arn "$LISTENER_ARN" \
+              --query 'max(Rules[?Priority!=`default`].Priority)' \
+              --output text 2>/dev/null || echo "0")
+            [ "$MAX_PRIORITY" = "None" ] || [ -z "$MAX_PRIORITY" ] && MAX_PRIORITY=0
+            PRIORITY=$((MAX_PRIORITY + 1))
+
+            aws elbv2 create-rule \
+              --listener-arn "$LISTENER_ARN" \
+              --priority "$PRIORITY" \
+              --conditions "Field=host-header,HostHeaderConfig={Values=[${HOSTNAME}]}" \
+              --actions "Type=forward,TargetGroupArn=${TG_ARN}" \
+              --tags "Key=Service,Value=docs-preview" "Key=PR,Value=${PR_NUMBER}" > /dev/null
+          else
+            echo "Listener rule for ${HOSTNAME} already exists"
+          fi
+
+          # --- Create or update ECS service ---
+          SERVICE_STATUS=$(aws ecs describe-services \
+            --cluster "$ECS_CLUSTER" \
+            --services "$SERVICE_NAME" \
+            --query 'services[0].status' \
+            --output text 2>/dev/null || echo "MISSING")
+
+          if [ "$SERVICE_STATUS" = "ACTIVE" ]; then
+            echo "Updating existing service ${SERVICE_NAME}..."
+            aws ecs update-service \
+              --cluster "$ECS_CLUSTER" \
+              --service "$SERVICE_NAME" \
+              --task-definition "$SERVICE_NAME" \
+              --force-new-deployment > /dev/null
+          else
+            echo "Creating service ${SERVICE_NAME}..."
+            aws ecs create-service \
+              --cluster "$ECS_CLUSTER" \
+              --service-name "$SERVICE_NAME" \
+              --task-definition "$SERVICE_NAME" \
+              --desired-count 1 \
+              --launch-type FARGATE \
+              --network-configuration "awsvpcConfiguration={subnets=[${SUBNET_IDS}],securityGroups=[${TASK_SG_ID}],assignPublicIp=DISABLED}" \
+              --load-balancers "targetGroupArn=${TG_ARN},containerName=mintlify,containerPort=3000" \
+              --health-check-grace-period-seconds 180 \
+              --deployment-configuration "minimumHealthyPercent=0,maximumPercent=200" \
+              --tags "key=Service,value=docs-preview" "key=PR,value=${PR_NUMBER}" > /dev/null
+          fi
+
+          echo "Preview deploying at https://${HOSTNAME}"
+
+      - name: Comment preview URL on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const previewUrl = `https://pr-${prNumber}.docs-preview.emergedata.ai`;
+            const sha = context.sha.substring(0, 7);
+
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const marker = '<!-- docs-preview -->';
+            const existingComment = comments.data.find(c => c.body.includes(marker));
+
+            const body = [
+              marker,
+              '## Preview Deployment',
+              '',
+              `Your docs preview is deploying and will be available at:`,
+              '',
+              `**${previewUrl}**`,
+              '',
+              `> The preview may take 2–3 minutes to become available while the container starts up.`,
+              '',
+              `_Updated for commit \`${sha}\`_`,
+            ].join('\n');
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+            }

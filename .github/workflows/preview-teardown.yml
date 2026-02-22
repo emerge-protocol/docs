@@ -1,0 +1,101 @@
+name: Teardown Preview
+
+on:
+  pull_request:
+    types: [closed]
+
+env:
+  AWS_REGION: eu-central-1
+  ECS_CLUSTER: docs-preview
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  teardown-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PREVIEW_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Teardown preview resources
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          LISTENER_ARN: ${{ secrets.PREVIEW_LISTENER_ARN }}
+        run: |
+          set -euo pipefail
+
+          SERVICE_NAME="docs-preview-pr-${PR_NUMBER}"
+          TG_NAME="docs-pr-${PR_NUMBER}"
+          HOSTNAME="pr-${PR_NUMBER}.docs-preview.emergedata.ai"
+
+          echo "Tearing down preview for PR #${PR_NUMBER}..."
+
+          # --- Delete ECS service ---
+          SERVICE_STATUS=$(aws ecs describe-services \
+            --cluster "$ECS_CLUSTER" \
+            --services "$SERVICE_NAME" \
+            --query 'services[0].status' \
+            --output text 2>/dev/null || echo "MISSING")
+
+          if [ "$SERVICE_STATUS" = "ACTIVE" ]; then
+            echo "Scaling down service..."
+            aws ecs update-service \
+              --cluster "$ECS_CLUSTER" \
+              --service "$SERVICE_NAME" \
+              --desired-count 0 > /dev/null
+            sleep 10
+
+            echo "Deleting service..."
+            aws ecs delete-service \
+              --cluster "$ECS_CLUSTER" \
+              --service "$SERVICE_NAME" \
+              --force > /dev/null
+          else
+            echo "Service not found or already inactive"
+          fi
+
+          # --- Delete listener rule ---
+          RULE_ARN=$(aws elbv2 describe-rules \
+            --listener-arn "$LISTENER_ARN" \
+            --query "Rules[?Conditions[?HostHeaderConfig.Values[?contains(@, '${HOSTNAME}')]]].RuleArn" \
+            --output text 2>/dev/null || echo "")
+
+          if [ -n "$RULE_ARN" ] && [ "$RULE_ARN" != "None" ]; then
+            echo "Deleting listener rule..."
+            aws elbv2 delete-rule --rule-arn "$RULE_ARN"
+          else
+            echo "No listener rule found"
+          fi
+
+          # --- Delete target group (wait for deregistration) ---
+          TG_ARN=$(aws elbv2 describe-target-groups \
+            --names "$TG_NAME" \
+            --query 'TargetGroups[0].TargetGroupArn' \
+            --output text 2>/dev/null || echo "None")
+
+          if [ "$TG_ARN" != "None" ] && [ -n "$TG_ARN" ]; then
+            echo "Waiting for target deregistration..."
+            sleep 35
+            echo "Deleting target group..."
+            aws elbv2 delete-target-group --target-group-arn "$TG_ARN"
+          else
+            echo "No target group found"
+          fi
+
+          # --- Deregister task definitions ---
+          TASK_DEFS=$(aws ecs list-task-definitions \
+            --family-prefix "$SERVICE_NAME" \
+            --query 'taskDefinitionArns[]' \
+            --output text 2>/dev/null || echo "")
+
+          for td in $TASK_DEFS; do
+            echo "Deregistering task definition: $td"
+            aws ecs deregister-task-definition --task-definition "$td" > /dev/null
+          done
+
+          echo "Preview cleanup complete for PR #${PR_NUMBER}"
