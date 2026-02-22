@@ -1,0 +1,130 @@
+name: Cleanup Stale Previews
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # Daily at 3 AM UTC
+  workflow_dispatch:
+
+env:
+  AWS_REGION: eu-central-1
+  ECS_CLUSTER: docs-preview
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PREVIEW_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Clean up stale preview services
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LISTENER_ARN: ${{ secrets.PREVIEW_LISTENER_ARN }}
+        run: |
+          set -euo pipefail
+
+          echo "Checking for stale preview services..."
+
+          SERVICES=$(aws ecs list-services \
+            --cluster "$ECS_CLUSTER" \
+            --query 'serviceArns[]' \
+            --output text 2>/dev/null || echo "")
+
+          if [ -z "$SERVICES" ]; then
+            echo "No preview services running"
+            exit 0
+          fi
+
+          for SERVICE_ARN in $SERVICES; do
+            SERVICE_NAME=$(echo "$SERVICE_ARN" | awk -F'/' '{print $NF}')
+
+            # Extract PR number only from services matching the exact pattern
+            if [[ "$SERVICE_NAME" =~ ^docs-preview-pr-([0-9]+)$ ]]; then
+              PR_NUMBER="${BASH_REMATCH[1]}"
+            else
+              echo "Skipping non-preview service: $SERVICE_NAME"
+              continue
+            fi
+
+            PR_STATE=""
+            PR_ERR=$(mktemp)
+            if ! PR_STATE=$(gh pr view "$PR_NUMBER" --json state --jq '.state' 2>"$PR_ERR"); then
+              PR_ERROR_MSG=$(cat "$PR_ERR")
+              rm -f "$PR_ERR"
+              if echo "$PR_ERROR_MSG" | grep -qiE 'Could not resolve to a PullRequest|not found'; then
+                # PR genuinely doesn't exist — safe to clean up
+                PR_STATE="MERGED"
+              else
+                echo "Warning: could not determine state for PR #${PR_NUMBER}: $PR_ERROR_MSG"
+                echo "Skipping to avoid false-positive cleanup"
+                continue
+              fi
+            fi
+            rm -f "$PR_ERR"
+
+            if [ "$PR_STATE" != "OPEN" ]; then
+              echo "PR #${PR_NUMBER} is ${PR_STATE} — cleaning up service ${SERVICE_NAME}..."
+
+              TG_NAME="docs-pr-${PR_NUMBER}"
+              HOSTNAME="pr-${PR_NUMBER}.docs-preview.emergedata.ai"
+
+              # Scale down and delete service
+              aws ecs update-service \
+                --cluster "$ECS_CLUSTER" \
+                --service "$SERVICE_NAME" \
+                --desired-count 0 > /dev/null 2>&1 || true
+              sleep 10
+              aws ecs delete-service \
+                --cluster "$ECS_CLUSTER" \
+                --service "$SERVICE_NAME" \
+                --force > /dev/null 2>&1 || true
+
+              # Delete listener rule
+              RULE_ARN=$(aws elbv2 describe-rules \
+                --listener-arn "$LISTENER_ARN" \
+                --query "Rules[?Conditions[?HostHeaderConfig.Values[?contains(@, '${HOSTNAME}')]]].RuleArn" \
+                --output text 2>/dev/null || echo "")
+
+              if [ -n "$RULE_ARN" ] && [ "$RULE_ARN" != "None" ]; then
+                aws elbv2 delete-rule --rule-arn "$RULE_ARN" 2>/dev/null || true
+              fi
+
+              # Delete target group
+              TG_ARN=$(aws elbv2 describe-target-groups \
+                --names "$TG_NAME" \
+                --query 'TargetGroups[0].TargetGroupArn' \
+                --output text 2>/dev/null || echo "None")
+
+              if [ "$TG_ARN" != "None" ] && [ -n "$TG_ARN" ]; then
+                sleep 35
+                aws elbv2 delete-target-group --target-group-arn "$TG_ARN" 2>/dev/null || true
+              fi
+
+              # Deregister task definitions
+              TASK_DEFS=$(aws ecs list-task-definitions \
+                --family-prefix "$SERVICE_NAME" \
+                --query 'taskDefinitionArns[]' \
+                --output text 2>/dev/null || echo "")
+
+              for td in $TASK_DEFS; do
+                aws ecs deregister-task-definition --task-definition "$td" > /dev/null 2>&1 || true
+              done
+
+              echo "Cleaned up PR #${PR_NUMBER}"
+            else
+              echo "PR #${PR_NUMBER} is still OPEN — keeping preview"
+            fi
+          done
+
+          echo "Stale preview cleanup complete"
