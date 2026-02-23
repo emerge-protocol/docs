@@ -17,8 +17,8 @@ Retrieve user search history (Google searches).
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `auth_token` | string | No* | API token (overrides session) |
-| `uid` | string | No* | User identifier (overrides session) |
+| `auth_token` | string | No* | Base64-encoded JWT (starts with `eyJ...`). Not the user ID. |
+| `uid` | string | No* | Consented user ID (typically starts with `psub_`). Not the auth token. |
 | `begin` | string | No | Start time filter (ISO 8601) |
 | `end` | string | No | End time filter (ISO 8601) |
 | `ingested_begin` | string | No | Ingestion start (for delta queries) |
@@ -94,8 +94,8 @@ Retrieve user YouTube watch history and interactions.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `auth_token` | string | No* | API token (overrides session) |
-| `uid` | string | No* | User identifier (overrides session) |
+| `auth_token` | string | No* | Base64-encoded JWT (starts with `eyJ...`). Not the user ID. |
+| `uid` | string | No* | Consented user ID (typically starts with `psub_`). Not the auth token. |
 | `begin` | string | No | Start time filter (ISO 8601) |
 | `end` | string | No | End time filter (ISO 8601) |
 | `ingested_begin` | string | No | Ingestion start (for delta queries) |
@@ -155,8 +155,8 @@ Retrieve user web browsing history (Chrome).
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `auth_token` | string | No* | API token (overrides session) |
-| `uid` | string | No* | User identifier (overrides session) |
+| `auth_token` | string | No* | Base64-encoded JWT (starts with `eyJ...`). Not the user ID. |
+| `uid` | string | No* | Consented user ID (typically starts with `psub_`). Not the auth token. |
 | `begin` | string | No | Start time filter (ISO 8601) |
 | `end` | string | No | End time filter (ISO 8601) |
 | `ingested_begin` | string | No | Ingestion start (for delta queries) |
@@ -218,8 +218,8 @@ Retrieve user ad interactions (clicks and views).
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `auth_token` | string | No* | API token (overrides session) |
-| `uid` | string | No* | User identifier (overrides session) |
+| `auth_token` | string | No* | Base64-encoded JWT (starts with `eyJ...`). Not the user ID. |
+| `uid` | string | No* | Consented user ID (typically starts with `psub_`). Not the auth token. |
 | `begin` | string | No | Start time filter (ISO 8601) |
 | `end` | string | No | End time filter (ISO 8601) |
 | `ingested_begin` | string | No | Ingestion start (for delta queries) |
@@ -282,8 +282,8 @@ Retrieve user purchase receipts (email receipts).
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `auth_token` | string | No* | API token (overrides session) |
-| `uid` | string | No* | User identifier (overrides session) |
+| `auth_token` | string | No* | Base64-encoded JWT (starts with `eyJ...`). Not the user ID. |
+| `uid` | string | No* | Consented user ID (typically starts with `psub_`). Not the auth token. |
 | `begin` | string | No | Start time filter (ISO 8601) |
 | `end` | string | No | End time filter (ISO 8601) |
 | `ingested_begin` | string | No | Ingestion start (for delta queries) |
