@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Install mintlify CLI and socat (fallback for localhost binding)
 RUN npm install -g mintlify@latest && \
-    apk add --no-cache socat curl
+  apk add --no-cache socat curl
 
 # Copy entrypoint first so docs content changes don't invalidate this layer
 COPY entrypoint.sh /entrypoint.sh

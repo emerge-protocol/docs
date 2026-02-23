@@ -21,12 +21,6 @@ for i in $(seq 1 60); do
   sleep 2
 done
 
-if [ "$READY" -eq 0 ]; then
-  echo "Mintlify dev server did not become ready in 120s — exiting"
-  kill "$MINT_PID" 2>/dev/null || true
-  exit 1
-fi
-
 # Check if it's reachable on 0.0.0.0 (not just localhost)
 if curl -sf http://0.0.0.0:3000/ > /dev/null 2>&1; then
   echo "Mintlify dev server listening on 0.0.0.0:3000"
