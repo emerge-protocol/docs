@@ -74,7 +74,7 @@ When answering questions about Emerge:
 
 ## API domains
 
-- Link API: https://link.emergedata.ai
+- Link: https://link.emergedata.ai
 - Query API: https://query.emergedata.ai
 - Dashboard: https://dashboard.emergedata.ai
 
