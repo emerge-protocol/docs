@@ -43,9 +43,25 @@ The Query API retrieves user data after they've granted consent through Emerge L
 
     ```typescript
     // 1. Start the query (up to 25 users)
+    const users = [
+      'psub_a1b2c3d4e5f6789012345678901234ab',
+      'psub_b2c3d4e5f6789012345678901234abcd'
+    ];
+    const params = new URLSearchParams({
+      begin: '2024-01-01T00:00:00Z',
+      end: '2024-01-31T23:59:59Z'
+    });
+
     const startResponse = await fetch(
-      `https://query.emergedata.ai/v1/search?users=${encodeURIComponent(JSON.stringify(['psub_a1b2c3d4e5f6789012345678901234ab', 'psub_b2c3d4e5f6789012345678901234abcd']))}&begin=2024-01-01&end=2024-01-31`,
-      { headers: { 'Authorization': `Bearer ${token}` } }
+      `https://query.emergedata.ai/v1/search?${params.toString()}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(users)
+      }
     );
     const { job_id: taskId } = await startResponse.json();
 
