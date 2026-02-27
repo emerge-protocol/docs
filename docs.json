@@ -17,7 +17,7 @@
       "display": "interactive"
     }
   },
-  "openapi": ["openapi/link.json", "openapi/query.json"],
+  "openapi": ["openapi/link.json", "https://emerge-openapi-specs.s3.eu-central-1.amazonaws.com/query/1.7.1/openapi.json"],
   "seo": {
     "indexing": "all"
   },
@@ -126,7 +126,7 @@
           },
           {
             "group": "Async Endpoints",
-            "openapi": "openapi/query.json",
+            "openapi": "https://emerge-openapi-specs.s3.eu-central-1.amazonaws.com/query/1.7.1/openapi.json",
             "pages": [
               "GET /v1/search",
               "GET /v1/browsing",
@@ -139,7 +139,7 @@
           },
           {
             "group": "Sync Endpoints",
-            "openapi": "openapi/query.json",
+            "openapi": "https://emerge-openapi-specs.s3.eu-central-1.amazonaws.com/query/1.7.1/openapi.json",
             "pages": [
               "GET /v1/sync/categories",
               "GET /v1/sync/get_search",
