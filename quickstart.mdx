@@ -15,21 +15,21 @@ Get AI-powered help while integrating by connecting these docs to your AI tools.
     ```json
     {
       "mcpServers": {
-        "Emerge": { "url": "https://docs.emergedata.ai/mcp" }
+        "Emerge": { "type": "http", "url": "https://docs.emergedata.ai/mcp" }
       }
     }
     ```
   </Tab>
   <Tab title="Claude Code">
     ```bash
-    claude mcp add emerge https://docs.emergedata.ai/mcp
+    claude mcp add --transport http emerge https://docs.emergedata.ai/mcp
     ```
   </Tab>
   <Tab title="VS Code">
     Add to `.vscode/mcp.json`:
     ```json
     {
-      "servers": {
+      "mcpServers": {
         "Emerge": { "type": "http", "url": "https://docs.emergedata.ai/mcp" }
       }
     }

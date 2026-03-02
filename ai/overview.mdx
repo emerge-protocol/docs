@@ -41,7 +41,7 @@ Both use the same Model Context Protocol and work with Claude, Cursor, VS Code, 
 
     ```bash
     # Claude Code
-    claude mcp add emerge https://docs.emergedata.ai/mcp
+    claude mcp add --transport http emerge https://docs.emergedata.ai/mcp
     ```
 
     ```json
@@ -49,6 +49,7 @@ Both use the same Model Context Protocol and work with Claude, Cursor, VS Code, 
     {
       "mcpServers": {
         "Emerge": {
+          "type": "http",
           "url": "https://docs.emergedata.ai/mcp"
         }
       }

@@ -26,33 +26,53 @@ This page covers the **Documentation MCP server** setup. For Query API MCP serve
 https://docs.emergedata.ai/mcp
 ```
 
+**Transport**: Streamable HTTP (`http`)
+
 ## Setup by tool
 
 <Tabs>
-  <Tab title="Claude">
-    ### Claude Desktop App
+  <Tab title="Claude Code">
+    ### Add MCP server
 
-    1. Open Claude desktop app
-    2. Go to **Settings** → **Connectors**
-    3. Click **Add custom connector**
-    4. Enter the MCP server URL:
-       ```
-       https://docs.emergedata.ai/mcp
-       ```
-    5. Name it "Emerge API Docs"
-    6. Click **Save**
+    ```bash
+    claude mcp add --transport http emerge https://docs.emergedata.ai/mcp
+    ```
 
-    ### Claude.ai (Web)
+    ### Verify connection
 
-    1. Go to [claude.ai](https://claude.ai)
-    2. Click your profile → **Settings**
-    3. Navigate to **Connectors**
-    4. Add custom connector with the MCP URL
+    ```bash
+    claude mcp list
+    ```
 
-    Now you can ask Claude questions like:
-    - "How do I create a signed link for Emerge?"
-    - "What webhook events does Emerge send?"
-    - "Show me the Python code to query search history"
+    You should see:
+    ```
+    emerge: https://docs.emergedata.ai/mcp (connected)
+    ```
+
+    ### Usage
+
+    Claude Code will automatically use the docs when relevant:
+
+    ```bash
+    claude "How do I implement delta queries in Emerge?"
+    ```
+  </Tab>
+
+  <Tab title="Claude Desktop">
+    ### Configuration file
+
+    Update `claude_desktop_config.json`:
+
+    ```json
+    {
+      "mcpServers": {
+        "emerge": {
+          "command": "",
+          "url": "https://docs.emergedata.ai/mcp"
+        }
+      }
+    }
+    ```
   </Tab>
 
   <Tab title="Cursor">
@@ -64,6 +84,7 @@ https://docs.emergedata.ai/mcp
     {
       "mcpServers": {
         "Emerge": {
+          "type": "http",
           "url": "https://docs.emergedata.ai/mcp"
         }
       }
@@ -94,7 +115,7 @@ https://docs.emergedata.ai/mcp
 
     ```json
     {
-      "servers": {
+      "mcpServers": {
         "Emerge": {
           "type": "http",
           "url": "https://docs.emergedata.ai/mcp"
@@ -115,30 +136,34 @@ https://docs.emergedata.ai/mcp
     Any VS Code AI extension supporting MCP can use this configuration.
   </Tab>
 
-  <Tab title="Claude Code">
+  <Tab title="Codex CLI">
     ### Add MCP server
 
     ```bash
-    claude mcp add emerge https://docs.emergedata.ai/mcp
+    codex mcp add emerge --url https://docs.emergedata.ai/mcp
     ```
 
     ### Verify connection
 
     ```bash
-    claude mcp list
+    codex mcp list
     ```
+  </Tab>
 
-    You should see:
-    ```
-    emerge: https://docs.emergedata.ai/mcp (connected)
-    ```
+  <Tab title="Windsurf">
+    ### Configuration file
 
-    ### Usage
+    Update `mcp_config.json`:
 
-    Claude Code will automatically use the docs when relevant:
-
-    ```bash
-    claude "How do I implement delta queries in Emerge?"
+    ```json
+    {
+      "mcpServers": {
+        "emerge": {
+          "url": "https://docs.emergedata.ai/mcp",
+          "headers": {}
+        }
+      }
+    }
     ```
   </Tab>
 </Tabs>
@@ -164,6 +189,7 @@ If the AI gives a generic response or says it can't find information, the MCP co
     - Restart the tool after adding configuration
     - Check that the config file is in the correct location
     - Verify the URL is exactly `https://docs.emergedata.ai/mcp`
+    - Verify transport is `http` (not `sse`)
   </Accordion>
   <Accordion title="Connection timeout">
     The MCP server should respond within seconds. If timeouts occur:
