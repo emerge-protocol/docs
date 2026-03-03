@@ -267,14 +267,26 @@ If you need to paginate through very large async results, use the `begin` and `e
 
 ```typescript
 // First batch: January 1-15
+const firstWindow = new URLSearchParams({
+  user_ids: 'psub_a1b2c3d4e5f6789012345678901234ab',
+  begin: '2024-01-01T00:00:00Z',
+  end: '2024-01-15T23:59:59Z'
+});
+
 const job1 = await fetch(
-  `https://query.emergedata.ai/v1/search?users=${users}&begin=2024-01-01&end=2024-01-15`,
+  `https://query.emergedata.ai/v1/search?${firstWindow.toString()}`,
   { headers: { 'Authorization': `Bearer ${API_TOKEN}` } }
 ).then(r => r.json());
 
 // Second batch: January 16-31
+const secondWindow = new URLSearchParams({
+  user_ids: 'psub_a1b2c3d4e5f6789012345678901234ab',
+  begin: '2024-01-16T00:00:00Z',
+  end: '2024-01-31T23:59:59Z'
+});
+
 const job2 = await fetch(
-  `https://query.emergedata.ai/v1/search?users=${users}&begin=2024-01-16&end=2024-01-31`,
+  `https://query.emergedata.ai/v1/search?${secondWindow.toString()}`,
   { headers: { 'Authorization': `Bearer ${API_TOKEN}` } }
 ).then(r => r.json());
 ```

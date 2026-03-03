@@ -21,12 +21,25 @@ for i in $(seq 1 60); do
   sleep 2
 done
 
-# Check if it's reachable on 0.0.0.0 (not just localhost)
-if curl -sf http://0.0.0.0:3000/ > /dev/null 2>&1; then
-  echo "Mintlify dev server listening on 0.0.0.0:3000"
+# Check if it's reachable on a non-loopback interface.
+# 0.0.0.0 is not a reliable connectivity probe.
+CONTAINER_IP=""
+for ip in $(hostname -i 2>/dev/null || true); do
+  case "$ip" in
+    127.*|::1)
+      ;;
+    *)
+      CONTAINER_IP="$ip"
+      break
+      ;;
+  esac
+done
+
+if [ -n "$CONTAINER_IP" ] && curl -sf "http://${CONTAINER_IP}:3000/" > /dev/null 2>&1; then
+  echo "Mintlify dev server reachable on ${CONTAINER_IP}:3000"
   wait $MINT_PID
 else
-  echo "Mintlify bound to localhost only — starting socat proxy"
+  echo "Mintlify not reachable on container interface — starting socat proxy"
 
   # Graceful kill with force fallback
   kill "$MINT_PID" 2>/dev/null || true
