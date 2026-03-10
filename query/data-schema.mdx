@@ -5,6 +5,18 @@ description: "Field-level schema for Query API event records"
 
 Use this page as the canonical schema reference for Query API payloads.
 
+## Event Types Overview
+
+The Query API provides five types of enriched events:
+
+| Event Type | Description |
+|-----------|-------------|
+| 🔍 Search Events | Search queries and results across platforms |
+| 🌐 Browsing Events | Websites visited and page views |
+| 📺 YouTube Events | YouTube videos watched and interactions |
+| 📢 Ads Events | Advertisements seen across the web |
+| 🧾 Receipts Events | Purchase receipts and transaction data |
+
 ## Sync response envelope
 
 All sync endpoints return:
@@ -56,8 +68,7 @@ Captures what people search for online.
 | `category` | The topic category this search relates to | `"/Shopping/Apparel/Footwear"` |
 | `brands` | Brand names found in the search results | `["Nike", "Adidas"]` |
 
-**Response example:**
-
+<Accordion title="Response example">
 ```json
 {
   "data": [
@@ -80,6 +91,7 @@ Captures what people search for online.
   "applied_ingested_end": "2026-02-12T09:10:11Z"
 }
 ```
+</Accordion>
 
 ### Browsing Events
 
@@ -95,6 +107,30 @@ Captures websites people visit.
 | `category` | The topic category this page relates to | `"/Shopping/Apparel/Footwear"` |
 | `brands` | Brand names detected on the page | `["Nike"]` |
 
+<Accordion title="Response example">
+```json
+{
+  "data": [
+    {
+      "user_id": "psub_d4e5f6789012345678901234abcdef01",
+      "event_id": 102940,
+      "timestamp": "2026-02-10T09:15:22Z",
+      "ingested_at": "2026-02-10T09:16:33Z",
+      "url": "https://www.nike.com/running-shoes",
+      "title": "Running Shoes - Nike.com",
+      "page_category": "product",
+      "category": "/Shopping/Apparel/Footwear",
+      "brands": ["Nike"]
+    }
+  ],
+  "count": 1,
+  "next_cursor": null,
+  "has_more": false,
+  "applied_ingested_end": "2026-02-12T09:10:11Z"
+}
+```
+</Accordion>
+
 ### YouTube Events
 
 Captures YouTube videos people watch.
@@ -108,6 +144,29 @@ Captures YouTube videos people watch.
 | `category` | The topic category this video relates to | `"/Sports/Running"` |
 | `brands` | Brand names mentioned or shown in the video | `["Nike", "Adidas"]` |
 
+<Accordion title="Response example">
+```json
+{
+  "data": [
+    {
+      "user_id": "psub_d4e5f6789012345678901234abcdef01",
+      "event_id": 102942,
+      "timestamp": "2026-02-10T10:30:45Z",
+      "ingested_at": "2026-02-10T10:31:12Z",
+      "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "title": "Best Running Shoes for Beginners",
+      "category": "/Sports/Running",
+      "brands": ["Nike", "Adidas"]
+    }
+  ],
+  "count": 1,
+  "next_cursor": null,
+  "has_more": false,
+  "applied_ingested_end": "2026-02-12T09:10:11Z"
+}
+```
+</Accordion>
+
 ### Ads Events
 
 Captures online ads people see and click.
@@ -120,8 +179,35 @@ Captures online ads people see and click.
 | `landing_domain` | The website the ad links to | `"nike.com"` |
 | `url` | The full web address the ad links to | `"https://www.nike.com/sale"` |
 | `title` | The headline or text shown in the ad | `"Nike Sale - Up to 50% Off"` |
+| `category` | The topic category this ad relates to | `"/Shopping/Apparel/Footwear"` |
 | `brands` | Brand names associated with the ad | `["Nike"]` |
 | `ad_network` | The company serving the ad (like Google, Meta) | `"Google Ads"` |
+
+<Accordion title="Response example">
+```json
+{
+  "data": [
+    {
+      "user_id": "psub_d4e5f6789012345678901234abcdef01",
+      "event_id": 102945,
+      "timestamp": "2026-02-10T11:22:33Z",
+      "ingested_at": "2026-02-10T11:23:01Z",
+      "source_domain": "cnn.com",
+      "landing_domain": "nike.com",
+      "url": "https://www.nike.com/sale",
+      "title": "Nike Sale - Up to 50% Off",
+      "category": "/Shopping/Apparel/Footwear",
+      "brands": ["Nike"],
+      "ad_network": "Google Ads"
+    }
+  ],
+  "count": 1,
+  "next_cursor": null,
+  "has_more": false,
+  "applied_ingested_end": "2026-02-12T09:10:11Z"
+}
+```
+</Accordion>
 
 ### Receipts Events
 
@@ -149,6 +235,39 @@ Each item in the `items` array includes:
 | `unit_price` | The price for one item | `149.99` |
 | `brand` | The brand of this specific item | `"Nike"` |
 | `category` | The product category | `"/Shopping/Apparel/Footwear"` |
+
+<Accordion title="Response example">
+```json
+{
+  "data": [
+    {
+      "user_id": "psub_d4e5f6789012345678901234abcdef01",
+      "event_id": 102950,
+      "timestamp": "2026-02-10T14:45:22Z",
+      "ingested_at": "2026-02-10T14:46:11Z",
+      "subject": "Your Nike.com order confirmation",
+      "retailer_name": "Nike.com",
+      "receipt_currency": "USD",
+      "total_value": 149.99,
+      "items": [
+        {
+          "name": "Air Max 90",
+          "quantity": 1,
+          "unit_price": 149.99,
+          "brand": "Nike",
+          "category": "/Shopping/Apparel/Footwear"
+        }
+      ],
+      "brands": ["Nike"]
+    }
+  ],
+  "count": 1,
+  "next_cursor": null,
+  "has_more": false,
+  "applied_ingested_end": "2026-02-12T09:10:11Z"
+}
+```
+</Accordion>
 
 ## Type-safe parsing examples
 
