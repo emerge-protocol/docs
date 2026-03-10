@@ -29,26 +29,34 @@ All sync endpoints return:
 
 ## Common event fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `user_id` | string | Partner user identifier (`uid`) |
-| `event_id` | integer | Stable event id for deduplication |
-| `timestamp` | ISO 8601 | Event timestamp |
-| `ingested_at` | ISO 8601 | Ingestion timestamp in Emerge |
-| `category` | string \| null | Google Topics taxonomy path (for example `/Shopping/...`) |
+Every event includes these standard fields:
 
-## Per-endpoint event schemas
+| Data Point Name | Explanation | Example Value |
+|-----------------|-------------|---------------|
+| `user_id` | Your unique identifier for this person | `"psub_d4e5f6789012345678901234abcdef01"` |
+| `event_id` | Unique ID for this specific event (used to avoid duplicates) | `102938` |
+| `timestamp` | When this event happened | `"2026-02-10T08:22:11Z"` |
+| `ingested_at` | When Emerge received this event | `"2026-02-10T08:23:40Z"` |
+| `category` | The topic category (from Google Topics taxonomy) | `"/Shopping/Apparel/Footwear"` |
 
-### Search (`/v1/sync/get_search`)
+## Event type schemas
 
-Additional fields:
-- `url`: string \| null
-- `title`: string \| null
-- `query`: string \| null
-- `intent`: string \| null
-- `brands`: string[]
+### Search Events
 
-Response example:
+Captures what people search for online.
+
+**Endpoint:** `/v1/sync/get_search`
+
+| Data Point Name | Explanation | Example Value |
+|-----------------|-------------|---------------|
+| `url` | The web address where the search happened | `"https://www.google.com/search?q=running+shoes"` |
+| `title` | The page title shown in the browser tab | `"running shoes - Google Search"` |
+| `query` | The exact words the person searched for | `"running shoes"` |
+| `intent` | Why they searched: looking for info, ready to buy, or finding a specific site | `"transactional"` (options: `"informational"`, `"transactional"`, `"navigational"`) |
+| `category` | The topic category this search relates to | `"/Shopping/Apparel/Footwear"` |
+| `brands` | Brand names found in the search results | `["Nike", "Adidas"]` |
+
+**Response example:**
 
 ```json
 {
@@ -73,47 +81,74 @@ Response example:
 }
 ```
 
-### Browsing (`/v1/sync/get_browsing`)
+### Browsing Events
 
-Additional fields:
-- `url`: string \| null
-- `title`: string \| null
-- `page_category`: string \| null
-- `brands`: string[]
+Captures websites people visit.
 
-### YouTube (`/v1/sync/get_youtube`)
+**Endpoint:** `/v1/sync/get_browsing`
 
-Additional fields:
-- `url`: string \| null
-- `title`: string \| null
-- `brands`: string[]
+| Data Point Name | Explanation | Example Value |
+|-----------------|-------------|---------------|
+| `url` | The web address of the page visited | `"https://www.nike.com/running-shoes"` |
+| `title` | The page title shown in the browser tab | `"Running Shoes - Nike.com"` |
+| `page_category` | The type of page visited (like product page, article, homepage) | `"product"` |
+| `category` | The topic category this page relates to | `"/Shopping/Apparel/Footwear"` |
+| `brands` | Brand names detected on the page | `["Nike"]` |
 
-### Ads (`/v1/sync/get_ads`)
+### YouTube Events
 
-Additional fields:
-- `source_domain`: string \| null
-- `landing_domain`: string \| null
-- `url`: string \| null
-- `title`: string \| null
-- `brands`: (string \| null)[]
-- `ad_network`: string \| null
+Captures YouTube videos people watch.
 
-### Receipts (`/v1/sync/get_receipts`)
+**Endpoint:** `/v1/sync/get_youtube`
 
-Additional fields:
-- `subject`: string \| null
-- `retailer_name`: string \| null
-- `receipt_currency`: string \| null
-- `total_value`: number \| null
-- `items`: `ReceiptItem[]`
-- `brands`: (string \| null)[]
+| Data Point Name | Explanation | Example Value |
+|-----------------|-------------|---------------|
+| `url` | The YouTube video web address | `"https://www.youtube.com/watch?v=dQw4w9WgXcQ"` |
+| `title` | The video title | `"Best Running Shoes for Beginners"` |
+| `category` | The topic category this video relates to | `"/Sports/Running"` |
+| `brands` | Brand names mentioned or shown in the video | `["Nike", "Adidas"]` |
 
-`ReceiptItem`:
-- `name`: string \| null
-- `quantity`: integer \| null
-- `unit_price`: number \| null
-- `brand`: string \| null
-- `category`: string \| null
+### Ads Events
+
+Captures online ads people see and click.
+
+**Endpoint:** `/v1/sync/get_ads`
+
+| Data Point Name | Explanation | Example Value |
+|-----------------|-------------|---------------|
+| `source_domain` | The website where the ad was shown | `"cnn.com"` |
+| `landing_domain` | The website the ad links to | `"nike.com"` |
+| `url` | The full web address the ad links to | `"https://www.nike.com/sale"` |
+| `title` | The headline or text shown in the ad | `"Nike Sale - Up to 50% Off"` |
+| `brands` | Brand names associated with the ad | `["Nike"]` |
+| `ad_network` | The company serving the ad (like Google, Meta) | `"Google Ads"` |
+
+### Receipts Events
+
+Captures purchases from email receipts.
+
+**Endpoint:** `/v1/sync/get_receipts`
+
+| Data Point Name | Explanation | Example Value |
+|-----------------|-------------|---------------|
+| `subject` | The email subject line | `"Your Nike.com order confirmation"` |
+| `retailer_name` | The store or website where the purchase was made | `"Nike.com"` |
+| `receipt_currency` | The currency used for the purchase | `"USD"` |
+| `total_value` | The total amount spent | `149.99` |
+| `items` | List of items purchased (see item details below) | `[{...}, {...}]` |
+| `brands` | Brand names from all items in the receipt | `["Nike"]` |
+
+**Receipt item details:**
+
+Each item in the `items` array includes:
+
+| Data Point Name | Explanation | Example Value |
+|-----------------|-------------|---------------|
+| `name` | The product name | `"Air Max 90"` |
+| `quantity` | How many of this item were purchased | `1` |
+| `unit_price` | The price for one item | `149.99` |
+| `brand` | The brand of this specific item | `"Nike"` |
+| `category` | The product category | `"/Shopping/Apparel/Footwear"` |
 
 ## Type-safe parsing examples
 
