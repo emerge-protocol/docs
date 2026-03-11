@@ -1,0 +1,223 @@
+---
+title: "Query via MCP"
+description: "Access Query API data through AI tools using the Model Context Protocol"
+---
+
+In addition to direct HTTP calls, you can query consented user data through the **Query API MCP server**. This lets AI tools (Claude, Cursor, VS Code) access search history, browsing data, YouTube history, ad interactions, and receipts using natural language.
+
+<Note>
+This guide is for **developers querying data** via MCP. If you're building a product that ships with MCP integration, see the [Ship with MCP](/ai/mcp-query-setup) section for full integration details.
+</Note>
+
+## Why use MCP?
+
+The Model Context Protocol provides a convenient layer over the Query API:
+
+| Approach | Best For |
+|----------|----------|
+| **Direct HTTP** | Server-to-server, custom apps, full control |
+| **MCP** | AI tools, IDE workflows, exploratory analysis |
+
+**Benefits of MCP access:**
+- Natural language queries instead of constructing HTTP calls
+- Session-based credentials (provide once, not per request)
+- Built-in tool discovery and parameter validation
+- Native support in Claude, Cursor, VS Code
+
+## MCP Server Details
+
+**Server URL:**
+```
+https://mcp.emergedata.ai/mcp
+```
+
+**Authentication:** Session-based — provide credentials when connecting
+
+**Available data:**
+- Search history
+- Browsing history
+- YouTube watch history
+- Ad interactions
+- Purchase receipts
+
+## Connecting to the MCP Server
+
+The MCP server uses **session-based authentication**. You provide your credentials once during connection setup, and they're used automatically for all subsequent queries.
+
+**Required credentials:**
+- `auth_token` — Your API token from [The Control Room](https://dashboard.emergedata.ai)
+- `uid` — The user's pseudonymous ID from the consent callback
+
+<Tabs>
+  <Tab title="Claude Code">
+    Add the MCP server using the Claude CLI:
+
+    ```bash
+    claude mcp add emerge-query "https://mcp.emergedata.ai/mcp?auth_token=YOUR_TOKEN&uid=YOUR_UID"
+    ```
+
+    **Verify connection:**
+    ```bash
+    claude mcp list
+    ```
+
+    You should see:
+    ```
+    emerge-query: https://mcp.emergedata.ai/mcp (connected)
+    ```
+
+    **Query data:**
+    ```bash
+    claude "Show me search history from the last week"
+    ```
+
+    Claude will automatically call the appropriate MCP tool and format results.
+  </Tab>
+
+  <Tab title="Claude Desktop">
+    **Setup steps:**
+
+    1. Open Claude desktop app
+    2. Go to **Settings** → **Connectors**
+    3. Click **Add custom connector**
+    4. Enter:
+       - **Name:** Emerge Query API
+       - **URL:** `https://mcp.emergedata.ai/mcp?auth_token=YOUR_TOKEN&uid=YOUR_UID`
+    5. Click **Save**
+
+    **Example queries:**
+    - "Get search history for the last week"
+    - "What YouTube videos has this user watched?"
+    - "Show browsing history filtered by Shopping category"
+
+    Claude will automatically select the right tool and apply filters.
+  </Tab>
+
+  <Tab title="Cursor">
+    Create or edit `.cursor/mcp.json` in your project root:
+
+    ```json
+    {
+      "mcpServers": {
+        "Emerge Query": {
+          "url": "https://mcp.emergedata.ai/mcp?auth_token=YOUR_TOKEN&uid=YOUR_UID"
+        }
+      }
+    }
+    ```
+
+    <Warning>
+    **Security:** Use environment variables instead of hardcoding credentials:
+    ```json
+    {
+      "mcpServers": {
+        "Emerge Query": {
+          "url": "https://mcp.emergedata.ai/mcp?auth_token=${EMERGE_TOKEN}&uid=${EMERGE_UID}"
+        }
+      }
+    }
+    ```
+    </Warning>
+
+    **Usage in Cursor:**
+    ```
+    @Emerge Query Show me search patterns for the last month
+    ```
+
+    Cursor will query the MCP server and present structured insights.
+  </Tab>
+
+  <Tab title="VS Code">
+    Create `.vscode/mcp.json` in your workspace:
+
+    ```json
+    {
+      "servers": {
+        "Emerge Query": {
+          "type": "http",
+          "url": "https://mcp.emergedata.ai/mcp?auth_token=YOUR_TOKEN&uid=YOUR_UID"
+        }
+      }
+    }
+    ```
+
+    Any VS Code AI extension supporting MCP can use this connection to query user data.
+  </Tab>
+</Tabs>
+
+## Available Tools
+
+The MCP server exposes 5 tools that map 1:1 to Query API sync endpoints:
+
+| MCP Tool | Query API Endpoint | Data Type |
+|----------|-------------------|-----------|
+| `get_search_data` | `/v1/sync/get_search` | Search history |
+| `get_browsing_data` | `/v1/sync/get_browsing` | Web browsing |
+| `get_youtube_data` | `/v1/sync/get_youtube` | YouTube watch history |
+| `get_ads_data` | `/v1/sync/get_ads` | Ad interactions |
+| `get_receipts_data` | `/v1/sync/get_receipts` | Purchase receipts |
+
+All tools support:
+- Date range filtering (`begin`/`end`)
+- Category filtering (Google Topics taxonomy)
+- Pagination (cursor-based)
+- Delta queries (incremental sync with `ingested_begin`/`ingested_end`)
+
+## Response Format
+
+All MCP tools return consistent JSON:
+
+```json
+{
+  "success": true,
+  "count": 10,
+  "has_more": true,
+  "next_cursor": "eyJsYXN0X2V2ZW50X2lkIjoxMjM0NX0=",
+  "applied_ingested_end": "2024-01-15T10:30:00Z",
+  "data": [
+    // ... event objects
+  ]
+}
+```
+
+This matches the [sync endpoint response format](/query/overview#sync-response-format) from the Query API.
+
+## Example Queries
+
+<CodeGroup>
+```text Search History
+"Get search history from the last 7 days filtered by Shopping category"
+```
+
+```text YouTube
+"Show me the most recent YouTube videos watched, grouped by category"
+```
+
+```text Browsing with Pagination
+"Retrieve browsing history with cursor abc123, limit 500 results"
+```
+
+```text Receipts
+"Find all purchase receipts from January 2024"
+```
+</CodeGroup>
+
+The AI agent will:
+1. Parse your natural language request
+2. Select the appropriate MCP tool
+3. Apply filters and date ranges
+4. Return formatted results
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Full MCP Docs" icon="rocket" href="/ai/mcp-query-setup">
+    Complete setup guide with troubleshooting and advanced usage
+  </Card>
+  <Card title="Tool Reference" icon="wrench" href="/ai/mcp-query-tools">
+    Detailed parameters and responses for all 5 tools
+  </Card>
+  <Card title="Query API Guide" icon="database" href="/query/overview">
+    Learn about sync vs async endpoints and direct HTTP access
+  </Card>
+</CardGroup>
