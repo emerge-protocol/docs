@@ -3,7 +3,7 @@ title: "MCP Query Setup"
 description: "Connect AI tools to query consented user data via MCP"
 ---
 
-The Query API MCP server gives AI agents (Claude, Cursor, VS Code) secure access to consented user data. Instead of making direct HTTP calls, AI tools use the Model Context Protocol with session-based credentials.
+The Query MCP server gives AI agents (Claude, Cursor, VS Code) secure access to consented user data. Instead of making direct HTTP calls, AI tools use the Model Context Protocol with session-based credentials.
 
 <Note>
 **Different from Docs MCP**: This server queries **user data**. For documentation search, see [Docs MCP Setup](/ai/mcp-docs-setup).
@@ -84,7 +84,7 @@ https://mcp.emergedata.ai/mcp
     2. Go to **Settings** → **Connectors**
     3. Click **Add custom connector**
     4. Enter configuration:
-       - **Name**: Emerge Query API
+       - **Name**: Emerge Query MCP
        - **URL**: `https://mcp.emergedata.ai/mcp`
     5. Add connection parameters:
        ```
@@ -223,7 +223,7 @@ The MCP server exposes 5 tools that map 1:1 to Query API sync endpoints:
 | `get_ads_data` | `/v1/sync/get_ads` | Ad interactions |
 | `get_receipts_data` | `/v1/sync/get_receipts` | Purchase receipts |
 
-See [MCP Query Tools](/ai/mcp-query-tools) for detailed parameter and response documentation.
+See [Query MCP Tools](/ai/mcp-query-tools) for detailed parameter and response documentation.
 
 ## Response Format
 
