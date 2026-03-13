@@ -354,6 +354,10 @@ def wait_for_provider_export(uid: str, provider: str) -> None:
 }
 ```
 
+<Note>
+You can also subscribe to `data.ready` and `data.failed` webhooks for near-real-time export updates. Keep polling `GET /export/status/{uid}` as a fallback for missed webhook deliveries.
+</Note>
+
 ## Step 5: Query user data
 
 Once consent is granted and data is exported, query it using the sync endpoints.
@@ -419,7 +423,7 @@ print(search_history['data'])
     Learn about sync vs async queries
   </Card>
   <Card title="Webhooks" icon="webhook" href="/link/webhooks">
-    Track consent lifecycle changes
+    Track consent and data export lifecycle changes
   </Card>
   <Card title="SDK Reference" icon="code" href="/sdks/typescript">
     Full SDK implementation examples

@@ -20,7 +20,7 @@ sequenceDiagram
     Google->>User: Authenticate & consent
     User->>Emerge Link: Grant permissions
     Emerge Link->>Your App: Redirect with status
-    Emerge Link-->>Your App: Webhook: consent lifecycle event
+    Emerge Link-->>Your App: Webhook: consent/data lifecycle event
 ```
 
 ## Flow states
@@ -57,12 +57,12 @@ Preview the latest single-checkbox demo flow:
     Process the redirect callback and verify the state parameter.
   </Step>
   <Step title="Set up webhooks">
-    Receive consent lifecycle events (for example revocations and reauthorizations).
+    Receive consent and data export lifecycle events (for example revocations and `data.ready` updates).
   </Step>
 </Steps>
 
 <Note>
-If you update branding in the Control Room and want to remove a logo, clear the logo field. That sets `logo_url` to `null` and removes the stored logo.
+If you update branding in The Control Room and want to remove a logo, clear the logo field. That sets `logo_url` to `null` and removes the stored logo.
 </Note>
 
 ## What users see

@@ -8,6 +8,7 @@ description: "API updates and documentation changes"
 **Link API:**
 - Updated webhook payload contract to v2 (`sources[]` + `client_id` in payload)
 - Updated webhook headers (`X-Signature`, `X-Webhook-Version: 2.0`, `X-Attempt-Number`, `Idempotency-Key`)
+- Added `data.ready` and `data.failed` webhook event types for export lifecycle updates
 - Added `client_id` to `GET /consent/status/{uid}` response
 - Updated `GET /export/status/{uid}` to return provider-level `sources[]`
 - Provider names standardized to `google_data` and `gmail`

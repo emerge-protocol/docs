@@ -327,7 +327,7 @@ The AI agent will:
     **Cause**: No data available for query
 
     **Solutions**:
-    - Data export may still be processing (poll `GET /export/status/{uid}` and wait for provider `data_ready: true`)
+    - Data export may still be processing (watch for `data.ready`/`data.failed` webhooks or poll `GET /export/status/{uid}` until provider `data_ready: true`)
     - User may not have data for the requested type
     - Check time filters (`begin`/`end`) aren't excluding all data
     - Verify `category` filter isn't too restrictive
@@ -385,6 +385,6 @@ The MCP server is open-source:
     See AI workflow examples
   </Card>
   <Card title="Webhooks" icon="webhook" href="/link/webhooks">
-    Track consent lifecycle changes
+    Track consent and data export lifecycle changes
   </Card>
 </CardGroup>

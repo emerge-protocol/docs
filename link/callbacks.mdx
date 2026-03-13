@@ -203,8 +203,8 @@ When you receive `success` or `reauthorized`:
 
 1. **Data export starts automatically** - Emerge begins exporting the user's data from their provider
 2. **Export takes 1-15 minutes** - Depending on data volume
-3. **Consent lifecycle webhook (optional)** - You may receive `consent.given`/`consent.reauthorized` for audit/state updates
-4. **Poll export readiness** - Check `GET /export/status/{uid}` and query only when the provider in `sources[]` has `data_ready: true`
+3. **Webhook updates (optional)** - You may receive consent events plus `data.ready`/`data.failed` for provider-level export updates
+4. **Poll export readiness (recommended fallback)** - Check `GET /export/status/{uid}` and query only when the provider in `sources[]` has `data_ready: true`
 
 <Note>
 Use provider-level readiness from `sources[]` instead of assuming all providers are ready at once.

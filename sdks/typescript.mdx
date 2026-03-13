@@ -529,12 +529,12 @@ app.post('/webhooks/emerge', express.raw({ type: 'application/json' }), (req, re
         break;
       case 'data.ready':
         console.log(`Data ready for user ${payload.uid}`, payload.sources);
-        // Query the Query API for this uid
         break;
       case 'data.failed':
-        console.warn(`Data export failed for user ${payload.uid}`, payload.sources);
+        console.error(`Data export failed for user ${payload.uid}`, payload.sources);
         break;
-      // Handle other events...
+      default:
+        console.log(`Unhandled webhook event: ${payload.event}`);
     }
 
     res.status(200).send('OK');

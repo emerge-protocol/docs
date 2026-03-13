@@ -86,7 +86,7 @@ Every endpoint must document:
 - Async: Batch up to 25 users, date range with begin/end, results as Parquet file via S3 presigned URL
 
 **Webhooks:**
-- Event types: `consent.given`, `consent.revoked`, `consent.expiring`, `consent.reauthorized`
+- Event types: `consent.given`, `consent.revoked`, `consent.expiring`, `consent.reauthorized`, `data.ready`, `data.failed`
 - HMAC-SHA256 signature verification (`X-Signature` header)
 - Payload includes top-level `uid`, `client_id`, and provider-specific `sources[]`
 

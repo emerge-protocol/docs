@@ -1,9 +1,9 @@
 ---
 title: "Webhooks"
-description: "Receive consent lifecycle events from Emerge Link"
+description: "Receive consent and data lifecycle events from Emerge Link"
 ---
 
-Use Link webhooks to track consent lifecycle changes per provider.
+Use Link webhooks to track consent changes and data export status per provider.
 
 ## Authentication
 
@@ -48,13 +48,13 @@ All webhook events use:
 - `consent.given`:
   - `provider`, `scopes[]`, `valid_until`, `is_reauthorized`
 - `consent.revoked`:
-  - `provider`, `revoked_at`, `reason` — one of `"user_revoked"` (user toggled access off in the Data Wallet) or `"account_deleted"` (user deleted their account)
+  - `provider`, `revoked_at`, `reason` (`user_revoked` | `account_deleted`)
 - `consent.expiring`:
   - `provider`, `valid_until`, `days_until_expiry`
 - `consent.reauthorized`:
   - `provider`, `scopes[]`, `valid_until`, `is_returning_user`
 - `data.ready`:
-  - `provider`, `resources[]` — list of data resource types now queryable
+  - `provider`
 - `data.failed`:
   - `provider`, `error_code`, `error_message`
 
@@ -108,9 +108,9 @@ All webhook events use:
 }
 ```
 
-The `reason` field can be:
-- `"user_revoked"` — the user toggled access off in the Data Wallet
-- `"account_deleted"` — the user deleted their account
+`reason` values:
+- `user_revoked` — user manually revoked consent via the Data Wallet
+- `account_deleted` — user deleted their account (GDPR right-to-erasure)
 
 ### `consent.expiring`
 
@@ -153,21 +153,15 @@ The `reason` field can be:
 
 ### `data.ready`
 
-Fired when a user's exported data has landed and is queryable via the Query API.
-
 ```json
 {
   "event": "data.ready",
-  "timestamp": "2026-02-12T09:30:00.000000+00:00",
+  "timestamp": "2026-02-12T09:34:10.000000+00:00",
   "uid": "psub_d4e5f6789012345678901234abcdef01",
   "client_id": "ck_live_123456789",
   "sources": [
     {
-      "provider": "google_data",
-      "resources": [
-        "myactivity.search",
-        "chrome.history"
-      ]
+      "provider": "google_data"
     }
   ]
 }
@@ -175,19 +169,17 @@ Fired when a user's exported data has landed and is queryable via the Query API.
 
 ### `data.failed`
 
-Fired when a data export fails. Data for the affected provider will not be available via the Query API.
-
 ```json
 {
   "event": "data.failed",
-  "timestamp": "2026-02-12T09:30:00.000000+00:00",
+  "timestamp": "2026-02-12T09:35:41.000000+00:00",
   "uid": "psub_d4e5f6789012345678901234abcdef01",
   "client_id": "ck_live_123456789",
   "sources": [
     {
       "provider": "google_data",
-      "error_code": "export_timeout",
-      "error_message": "DPAPI export timed out after 300s"
+      "error_code": "export_provider_error",
+      "error_message": "Provider export request failed. Retry scheduled."
     }
   ]
 }
@@ -244,7 +236,7 @@ app.post("/webhooks/emerge", async (req, res) => {
     } else if (payload.event === "data.ready") {
       await handleDataReady(payload.uid, payload.sources);
     } else if (payload.event === "data.failed") {
-      console.warn("Data export failed for uid", payload.uid, payload.sources);
+      await handleDataFailed(payload.uid, payload.sources);
     }
 
     return res.status(200).send("OK");
@@ -273,13 +265,41 @@ async function handleRevocation(uid: string, sources: Array<Record<string, unkno
 
 async function handleDataReady(uid: string, sources: Array<Record<string, unknown>>) {
   for (const source of sources) {
-    console.log(`Data ready: uid=${uid} provider=${source.provider}`, source.resources);
-    // Query the Query API for this uid
+    const provider = String(source.provider ?? "");
+    if (provider) {
+      console.log(`Data ready for ${provider} and user ${uid}`);
+      await enqueueProviderQuery(uid, provider);
+    }
+  }
+}
+
+async function handleDataFailed(uid: string, sources: Array<Record<string, unknown>>) {
+  for (const source of sources) {
+    const provider = String(source.provider ?? "unknown_provider");
+    const errorCode = String(source.error_code ?? "unknown_error");
+    const errorMessage = String(source.error_message ?? "No details provided");
+    console.error(
+      `Data export failed for ${provider} and user ${uid}: ${errorCode} - ${errorMessage}`
+    );
+    await notifyOps(uid, provider, errorCode, errorMessage);
   }
 }
 
 async function purgeProviderData(uid: string, provider: string) {
   console.log(`Purging ${provider} data for ${uid}`);
+}
+
+async function enqueueProviderQuery(uid: string, provider: string) {
+  console.log(`Queueing query for ${provider} and user ${uid}`);
+}
+
+async function notifyOps(
+  uid: string,
+  provider: string,
+  errorCode: string,
+  errorMessage: string
+) {
+  console.log(`Notify ops: ${uid} ${provider} ${errorCode} ${errorMessage}`);
 }
 ```
 
@@ -316,7 +336,6 @@ async def receive_webhook(request: Request):
 
     payload = json.loads(body)
     event = payload.get("event")
-
     if event == "consent.revoked":
         uid = payload.get("uid", "")
         for source in payload.get("sources", []):
@@ -326,17 +345,27 @@ async def receive_webhook(request: Request):
     elif event == "data.ready":
         uid = payload.get("uid", "")
         for source in payload.get("sources", []):
-            print(f"Data ready: uid={uid} provider={source.get('provider')} resources={source.get('resources')}")
-            # Query the Query API for this uid
+            provider = source.get("provider")
+            if provider:
+                await enqueue_provider_query(uid, provider)
     elif event == "data.failed":
         uid = payload.get("uid", "")
         for source in payload.get("sources", []):
-            print(f"Data failed: uid={uid} provider={source.get('provider')} error={source.get('error_code')}")
+            provider = source.get("provider", "unknown_provider")
+            error_code = source.get("error_code", "unknown_error")
+            error_message = source.get("error_message", "No details provided")
+            await notify_ops(uid, provider, error_code, error_message)
 
     return {"status": "ok"}
 
 async def purge_provider_data(uid: str, provider: str):
     print(f"Purging {provider} data for {uid}")
+
+async def enqueue_provider_query(uid: str, provider: str):
+    print(f"Queueing query for {provider} and user {uid}")
+
+async def notify_ops(uid: str, provider: str, error_code: str, error_message: str):
+    print(f"Data export failed for {provider} and user {uid}: {error_code} - {error_message}")
 ```
 
 </CodeGroup>

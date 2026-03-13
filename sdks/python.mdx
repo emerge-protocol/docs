@@ -500,10 +500,9 @@ async def webhook(request: Request):
     elif payload.event == 'consent.expiring':
         print(f"Consent expiring for user {payload.uid}")
     elif payload.event == 'data.ready':
-        print(f"Data ready for user {payload.uid}", payload.sources)
-        # Query the Query API for this uid
+        print(f"Data ready for user {payload.uid}: {payload.sources}")
     elif payload.event == 'data.failed':
-        print(f"Data export failed for user {payload.uid}", payload.sources)
+        print(f"Data export failed for user {payload.uid}: {payload.sources}")
 
     return {'status': 'ok'}
 ```
