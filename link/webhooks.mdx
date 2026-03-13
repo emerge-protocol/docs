@@ -26,6 +26,8 @@ Headers sent by Emerge:
 | `consent.revoked` | Consent revoked |
 | `consent.expiring` | Consent nearing expiry |
 | `consent.reauthorized` | Previously revoked/expired consent granted again |
+| `data.ready` | User's data has landed and is queryable via the Query API |
+| `data.failed` | Data export failed — data will not be available via the Query API |
 
 ## Payload format (v2)
 
@@ -46,11 +48,15 @@ All webhook events use:
 - `consent.given`:
   - `provider`, `scopes[]`, `valid_until`, `is_reauthorized`
 - `consent.revoked`:
-  - `provider`, `revoked_at`, `reason`
+  - `provider`, `revoked_at`, `reason` — one of `"user_revoked"` (user toggled access off in the Data Wallet) or `"account_deleted"` (user deleted their account)
 - `consent.expiring`:
   - `provider`, `valid_until`, `days_until_expiry`
 - `consent.reauthorized`:
   - `provider`, `scopes[]`, `valid_until`, `is_returning_user`
+- `data.ready`:
+  - `provider`, `resources[]` — list of data resource types now queryable
+- `data.failed`:
+  - `provider`, `error_code`, `error_message`
 
 ## Response examples
 
@@ -102,6 +108,10 @@ All webhook events use:
 }
 ```
 
+The `reason` field can be:
+- `"user_revoked"` — the user toggled access off in the Data Wallet
+- `"account_deleted"` — the user deleted their account
+
 ### `consent.expiring`
 
 ```json
@@ -136,6 +146,48 @@ All webhook events use:
       ],
       "valid_until": "2026-08-11T09:22:44.000000+00:00",
       "is_returning_user": true
+    }
+  ]
+}
+```
+
+### `data.ready`
+
+Fired when a user's exported data has landed and is queryable via the Query API.
+
+```json
+{
+  "event": "data.ready",
+  "timestamp": "2026-02-12T09:30:00.000000+00:00",
+  "uid": "psub_d4e5f6789012345678901234abcdef01",
+  "client_id": "ck_live_123456789",
+  "sources": [
+    {
+      "provider": "google_data",
+      "resources": [
+        "myactivity.search",
+        "chrome.history"
+      ]
+    }
+  ]
+}
+```
+
+### `data.failed`
+
+Fired when a data export fails. Data for the affected provider will not be available via the Query API.
+
+```json
+{
+  "event": "data.failed",
+  "timestamp": "2026-02-12T09:30:00.000000+00:00",
+  "uid": "psub_d4e5f6789012345678901234abcdef01",
+  "client_id": "ck_live_123456789",
+  "sources": [
+    {
+      "provider": "google_data",
+      "error_code": "export_timeout",
+      "error_message": "DPAPI export timed out after 300s"
     }
   ]
 }
@@ -189,6 +241,10 @@ app.post("/webhooks/emerge", async (req, res) => {
 
     if (payload.event === "consent.revoked") {
       await handleRevocation(payload.uid, payload.sources);
+    } else if (payload.event === "data.ready") {
+      await handleDataReady(payload.uid, payload.sources);
+    } else if (payload.event === "data.failed") {
+      console.warn("Data export failed for uid", payload.uid, payload.sources);
     }
 
     return res.status(200).send("OK");
@@ -212,6 +268,13 @@ async function handleRevocation(uid: string, sources: Array<Record<string, unkno
     if (provider) {
       await purgeProviderData(uid, provider);
     }
+  }
+}
+
+async function handleDataReady(uid: string, sources: Array<Record<string, unknown>>) {
+  for (const source of sources) {
+    console.log(`Data ready: uid=${uid} provider=${source.provider}`, source.resources);
+    // Query the Query API for this uid
   }
 }
 
@@ -252,12 +315,23 @@ async def receive_webhook(request: Request):
     _seen.add(idem_key)
 
     payload = json.loads(body)
-    if payload.get("event") == "consent.revoked":
+    event = payload.get("event")
+
+    if event == "consent.revoked":
         uid = payload.get("uid", "")
         for source in payload.get("sources", []):
             provider = source.get("provider")
             if provider:
                 await purge_provider_data(uid, provider)
+    elif event == "data.ready":
+        uid = payload.get("uid", "")
+        for source in payload.get("sources", []):
+            print(f"Data ready: uid={uid} provider={source.get('provider')} resources={source.get('resources')}")
+            # Query the Query API for this uid
+    elif event == "data.failed":
+        uid = payload.get("uid", "")
+        for source in payload.get("sources", []):
+            print(f"Data failed: uid={uid} provider={source.get('provider')} error={source.get('error_code')}")
 
     return {"status": "ok"}
 
