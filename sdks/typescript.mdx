@@ -382,7 +382,9 @@ type WebhookEvent =
   | 'consent.given'
   | 'consent.revoked'
   | 'consent.expiring'
-  | 'consent.reauthorized';
+  | 'consent.reauthorized'
+  | 'data.ready'
+  | 'data.failed';
 
 interface WebhookPayload {
   event: WebhookEvent;
@@ -524,6 +526,13 @@ app.post('/webhooks/emerge', express.raw({ type: 'application/json' }), (req, re
         break;
       case 'consent.revoked':
         console.log(`Consent revoked for user ${payload.uid}`);
+        break;
+      case 'data.ready':
+        console.log(`Data ready for user ${payload.uid}`, payload.sources);
+        // Query the Query API for this uid
+        break;
+      case 'data.failed':
+        console.warn(`Data export failed for user ${payload.uid}`, payload.sources);
         break;
       // Handle other events...
     }
